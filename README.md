@@ -81,6 +81,9 @@ Uma interface de chat simples (*single-page application*) para interagir com o b
   - **`App.css`**: Arquivo de estilização para a janela de chat.
   - **`index.js` / `index.html`**: Entrypoint padrão do Create React App.
 
+### Fluxo de informação
+
+Este fluxograma ilustra como a informação transita pelo sistema, desde a mensagem do usuário até a resposta final, incluindo o loop de processamento para chamadas de função.
 
 ```mermaid
 flowchart TD;
