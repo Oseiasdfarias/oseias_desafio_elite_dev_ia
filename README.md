@@ -21,6 +21,43 @@ Este projeto implementa um agente SDR (Sales Development Representative) automat
 
 O projeto é dividido em duas partes principais: `backend` e `frontend`.
 
+``m̀ermaid
+graph TD
+    A[("SDR Agent (Projeto)")]
+
+    %% Fluxo Vertical Encadeado
+    A --> B["Arquivos de Configuração (README, .env, .gitignore)"]
+    B --> F["backend/ (Lógica do Servidor)"]
+    F --> G["frontend/ (Interface do Chat)"]
+
+    %% Detalhes do Backend
+    subgraph "Backend (FastAPI)"
+        F1["main.py (Rotas da API)"]
+        F2["services.py (Orquestração das APIs Externas)"]
+        F3["create_assistant.py (Setup do Assistente)"]
+        
+        %% Links verticais dentro do subgraph
+        F1 --> F2 --> F3
+    end
+    
+    %% Link de contenção (pontilhado)
+    F -.-> F1
+
+    %% Detalhes do Frontend
+    subgraph "Frontend (React)"
+        G1["App.js (Lógica da UI do Chat)"]
+        G2["index.html (Ponto de Entrada)"]
+        G3["package.json (Dependências)"]
+        
+        %% Links verticais dentro do subgraph
+        G1 --> G2 --> G3
+    end
+    
+    %% Link de contenção (pontilhado)
+    G -.-> G1
+```
+
+
 ### Backend (Python/FastAPI)
 
 Responsável por orquestrar a lógica de negócio, gerenciar sessões e se comunicar com as APIs externas.
@@ -41,6 +78,47 @@ Uma interface de chat simples (*single-page application*) para interagir com o b
   - **`App.js`**: O componente principal do React. Gerencia o estado da conversa (`messages`), o input do usuário e a `session_id`. Utiliza a `Fetch API` para se comunicar com o backend.
   - **`App.css`**: Arquivo de estilização para a janela de chat.
   - **`index.js` / `index.html`**: Entrypoint padrão do Create React App.
+
+
+``m̀ermaid
+flowchart TD;
+    A[/"Usuário (Navegador)"/] --> B("Frontend - React UI");
+    B -- "Envia Mensagem" --> C{"POST /chat (JSON)"};
+    C --> D["Backend - FastAPI"];
+    D --> E["OpenAIService: get_assistant_response"];
+    E --> F["OpenAI API: Adiciona Mensagem e Cria Run"];
+    
+    subgraph "Loop de Processamento (while...)"
+        direction TB;
+        F --> G{"Status do Run?"};
+        G -- "Requires Action" --> M["OpenAIService: _handle_required_action"];
+        M --> N{"Qual Função?"};
+        
+        N -- "registrarLead" --> O["PipefyService: create_or_update_lead"];
+        O --> P["API Externa: Pipefy (GraphQL)"];
+        
+        N -- "oferecerHorarios" --> Q["CalendarService: get_available_slots"];
+        Q --> R[("Simulação: calendar.json - Leitura")];
+
+        N -- "agendarReuniao" --> S["CalendarService: schedule_meeting"];
+        S --> T[("Simulação: calendar.json - Escrita")];
+
+        P --> U["Submeter Tool Output"];
+        R --> U;
+        T --> U;
+        
+        U --> G;
+    end;
+
+    G -- "Completed" --> H["Recuperar Mensagem Final"];
+    H --> I["Backend: Enviar Resposta (JSON)"];
+    
+    G -- "Failed / Timed Out" --> L["Formatar Mensagem de Erro"];
+    L --> I;
+
+    I --> J("Frontend: Exibir Resposta na UI");
+    J --> K[/"Usuário (Vê a resposta)"/];
+```
 
 ## Como Começar
 
