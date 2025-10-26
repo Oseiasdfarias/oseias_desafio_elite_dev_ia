@@ -31,5 +31,5 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     response: str
     lead_data: Optional[Lead] = None
-    session_id: str  # Adicionado
-    thread_id: str   # Adicionado
+    session_id: str
+    thread_id: str

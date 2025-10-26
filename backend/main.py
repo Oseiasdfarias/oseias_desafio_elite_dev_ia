@@ -130,7 +130,7 @@ async def reset_session(session_id: str):
         try:
             openai_service.cleanup_thread(old_thread_id)
         except Exception as e:
-             logger.error(f"Error cleaning up old thread {old_thread_id}: {e}")
+            logger.error(f"Error cleaning up old thread {old_thread_id}: {e}")
 
         # Criar novo thread
         new_thread_id = openai_service.create_thread()
