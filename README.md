@@ -22,7 +22,7 @@ Este projeto implementa um agente SDR (Sales Development Representative) automat
 O projeto é dividido em duas partes principais: `backend` e `frontend`.
 
 
-```
+```mermaid
 graph TD
     A[("SDR Agent (Projeto)")]
 
