@@ -21,7 +21,8 @@ Este projeto implementa um agente SDR (Sales Development Representative) automat
 
 O projeto é dividido em duas partes principais: `backend` e `frontend`.
 
-``m̀ermaid
+
+```
 graph TD
     A[("SDR Agent (Projeto)")]
 
@@ -55,6 +56,7 @@ graph TD
     
     %% Link de contenção (pontilhado)
     G -.-> G1
+
 ```
 
 
@@ -80,7 +82,7 @@ Uma interface de chat simples (*single-page application*) para interagir com o b
   - **`index.js` / `index.html`**: Entrypoint padrão do Create React App.
 
 
-``m̀ermaid
+```mermaid
 flowchart TD;
     A[/"Usuário (Navegador)"/] --> B("Frontend - React UI");
     B -- "Envia Mensagem" --> C{"POST /chat (JSON)"};
@@ -118,6 +120,7 @@ flowchart TD;
 
     I --> J("Frontend: Exibir Resposta na UI");
     J --> K[/"Usuário (Vê a resposta)"/];
+
 ```
 
 ## Como Começar
