@@ -1,0 +1,3 @@
+[flake8]
+max-line-length = 120  # Aumenta o limite para 120 caracteres
+ignore = E501         # Opcional: Ignora completamente o E501

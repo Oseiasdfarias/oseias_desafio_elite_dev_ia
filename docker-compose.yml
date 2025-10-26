@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  # Serviço do Backend (FastAPI)
+  backend:
+    build: ./backend
+    # Passa as variáveis de ambiente do .env da raiz
+    env_file:
+      - ./.env
+    # Mapeia a porta 8000 do contêiner para a 8000 do host
+    ports:
+      - "8000:8000"
+
+  # Serviço do Frontend (React + Nginx)
+  frontend:
+    build: ./frontend
+    ports:
+      # Mapeia a porta 3000 do host para a 80 do Nginx no contêiner
+      - "3000:80"
+    depends_on:
+      - backend # Garante que o backend inicie antes do frontend

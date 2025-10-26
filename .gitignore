@@ -1,0 +1,31 @@
+# === Arquivos de Configuração e Segredos ===
+# NUNCA comente esta linha. Contém suas chaves de API.
+.env
+.env.local
+.env.*
+
+# === Banco de Dados Fake ===
+# Ignora o arquivo de calendário para não salvar reuniões de teste no git
+calendar.json
+
+# === Dependências do Python (Backend) ===
+/backend/venv/
+/backend/__pycache__/
+*.pyc
+.pytest_cache/
+
+# === Dependências do Node.js (Frontend) ===
+/frontend/node_modules/
+/frontend/build/
+/frontend/dist/
+npm-debug.log*
+yarn-error.log*
+desafio_elite.md
+
+# === Arquivos de Sistema Operacional ===
+.DS_Store
+Thumbs.db
+ehthumbs.db
+._*
+
+# === Arquivos de IDE ===

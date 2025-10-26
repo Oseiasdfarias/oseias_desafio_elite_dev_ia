@@ -13,6 +13,7 @@
 </p>
 
 
+
 # Desafio Elite Dev IA - SDR Agent
 
 Este projeto implementa um agente SDR (Sales Development Representative) automatizado utilizando a API Assistant da OpenAI, FastAPI para o backend e um webchat baseado em React para o frontend. O agente foi projetado para engajar leads, coletar informações, agendar reuniões e gerenciar dados de leads no Pipefy.
@@ -20,7 +21,6 @@ Este projeto implementa um agente SDR (Sales Development Representative) automat
 ## Estrutura Detalhada do Projeto
 
 O projeto é dividido em duas partes principais: `backend` e `frontend`.
-
 
 ```mermaid
 graph TD
@@ -34,7 +34,7 @@ graph TD
     %% Detalhes do Backend
     subgraph "Backend (FastAPI)"
         F1["main.py (Rotas da API)"]
-        F2["services.py (Orquestração das APIs Externas)"]
+        F2["services/ (Pacote da Lógica de Serviços)"]
         F3["create_assistant.py (Setup do Assistente)"]
         
         %% Links verticais dentro do subgraph
@@ -59,16 +59,15 @@ graph TD
 
 ```
 
-
 ### Backend (Python/FastAPI)
 
 Responsável por orquestrar a lógica de negócio, gerenciar sessões e se comunicar com as APIs externas.
 
   - **`main.py`**: O entrypoint da aplicação FastAPI. Gerencia as rotas da API (como `/chat`, `/session`, `/history`), armazena as sessões ativas e associa IDs de sessão a *Threads* da OpenAI.
-  - **`services.py`**: O cérebro da aplicação, contendo as classes de serviço:
-      - **`OpenAIService`**: Gerencia a interação com a OpenAI. Implementa a lógica de *loop* (`while run.status == "requires_action"`) para lidar com múltiplas chamadas de função sequenciais (ex: `agendarReuniao` seguido de `registrarLead`).
-      - **`PipefyService`**: Gerencia a comunicação com a API GraphQL do Pipefy. Implementa a lógica de `create_or_update_lead`, garantindo que novos leads sejam criados e leads existentes (baseados no e-mail) sejam atualizados.
-      - **`CalendarService`**: Uma **simulação** de uma API de agenda. Usa um arquivo `calendar.json` local para gerenciar e consultar horários disponíveis.
+  - **`services/`**: Pacote contendo as classes de serviço:
+      - **`openai_service.py`**: Gerencia a interação com a OpenAI. Implementa a lógica de *loop* (`while run.status == "requires_action"`) para lidar com múltiplas chamadas de função sequenciais.
+      - **`pipefy_service.py`**: Gerencia a comunicação com a API GraphQL do Pipefy. Implementa a lógica de `create_or_update_lead`.
+      - **`calendar_service.py`**: Uma **simulação** de uma API de agenda. Usa um arquivo `calendar.json` local.
   - **`models.py`**: Define os modelos de dados Pydantic usados pela FastAPI para validação de requisições e respostas (ex: `Lead`, `ChatRequest`, `ChatResponse`).
   - **`create_assistant.py`**: Um script de *setup* único. Deve ser executado uma vez para criar o Assistente na plataforma da OpenAI com as instruções e definições de função corretas. Ele salva o `OPENAI_ASSISTANT_ID` gerado no arquivo `.env`.
   - **`calendar.json`**: Arquivo JSON usado como um "banco de dados" fake para a `CalendarService`.
@@ -77,7 +76,7 @@ Responsável por orquestrar a lógica de negócio, gerenciar sessões e se comun
 
 Uma interface de chat simples (*single-page application*) para interagir com o backend.
 
-  - **`App.js`**: O componente principal do React. Gerencia o estado da conversa (`messages`), o input do usuário e a `session_id`. Utiliza a `Fetch API` para se comunicar com o backend.
+  - **`App.js`**: O componente principal do React. Gerencia o estado da conversa (`messages`), o input do usuário e a `session_id`. Utiliza a `Fetch API` para se comunicar com o backend (através do proxy `/api`).
   - **`App.css`**: Arquivo de estilização para a janela de chat.
   - **`index.js` / `index.html`**: Entrypoint padrão do Create React App.
 
@@ -178,7 +177,7 @@ flowchart TD;
 
 3.  **Criar o Assistente OpenAI:**
 
-    Antes de iniciar o servidor, você precisa criar o assistente na OpenAI. O Docker Compose pode fazer isso, mas é recomendado executar manualmente na primeira vez para garantir:
+    Antes de iniciar o servidor, você precisa criar o assistente na OpenAI. O Docker Compose pode fazer isso, mas é recomendado executar manually na primeira vez para garantir:
 
     ```bash
     # (Opcional, se não for usar Docker) Crie um venv
@@ -199,9 +198,63 @@ flowchart TD;
     docker compose up --build
     ```
 
-    O backend estará em `http://localhost:8000` e o frontend em `http://localhost:3000`.
+    O backend estará acessível em `http://localhost:8000` e o frontend em `http://localhost:3000`.
 
-5.  **Rodando Localmente (Alternativa):**
+## Arquitetura de Dockerização
+
+A configuração do Docker neste projeto é projetada para simular um ambiente de produção real usando `docker-compose` para orquestrar múltiplos serviços. A arquitetura consiste em um **proxy reverso** (Nginx) que serve o frontend e encaminha as chamadas de API para o backend.
+
+Aqui está o papel de cada arquivo:
+
+1.  **`docker-compose.yml` (O Orquestrador)**
+
+      * Define e conecta os dois serviços principais: `backend` e `frontend`.
+      * `backend`: Constrói a imagem do `backend/Dockerfile` e expõe a porta `8000`. Ele também lê o arquivo `.env` da raiz para obter as chaves de API.
+      * `frontend`: Constrói a imagem do `frontend/Dockerfile` e mapeia a porta `3000` do seu computador para a porta `80` do Nginx dentro do contêiner.
+
+2.  **`backend/Dockerfile` (Servidor da API)**
+
+      * Usa uma imagem oficial do Python.
+      * Instala as dependências do `requirements.txt`.
+      * Copia o código-fonte do backend.
+      * Inicia o servidor `uvicorn` na porta `8000`, escutando em `0.0.0.0` (essencial para ser acessível por outros contêineres).
+
+3.  **`frontend/Dockerfile` (Servidor Web + Proxy)**
+
+      * Este é um **build multi-estágio** para otimização:
+      * **Estágio 1 (`build`):** Usa uma imagem `node` para instalar as dependências (`npm install`) e "compilar" o aplicativo React (`npm run build`). O resultado é uma pasta `build/` com arquivos estáticos (HTML, CSS, JS).
+      * **Estágio 2 (`serve`):** Usa uma imagem leve do `nginx`. Os arquivos estáticos da pasta `build/` (do estágio 1) são copiados para o Nginx.
+      * **Segurança:** O comando `RUN apk update && apk upgrade` é incluído para corrigir vulnerabilidades de segurança conhecidas na imagem base do Nginx.
+
+4.  **`frontend/nginx.conf` (O Proxy Reverso)**
+
+      * Este é o cérebro da comunicação frontend-backend.
+      * `location /`: Diz ao Nginx para servir os arquivos estáticos do React (o `index.html` e seus assets).
+      * `location /api/`: Diz ao Nginx para interceptar qualquer requisição que comece com `/api/` (ex: `/api/chat`), remover o prefixo `/api/` e encaminhar a requisição para o serviço `backend` (resolvido pelo Docker como `http://backend:8000/chat`).
+
+### Fluxo de um Pedido de Chat (Dockerizado)
+
+1.  O usuário acessa `http://localhost:3000` no navegador.
+
+2.  O Nginx (no contêiner `frontend`) entrega o aplicativo React (HTML, CSS, JS).
+
+3.  O usuário envia uma mensagem ("Olá").
+
+4.  O código React (`App.js`) executa `fetch('/api/chat', ...)`.
+
+5.  O navegador envia essa requisição para `http://localhost:3000/api/chat`.
+
+6.  O Nginx intercepta a requisição. A `location /api/` é ativada.
+
+7.  O Nginx encaminha a requisição para `http://backend:8000/chat` (usando a rede interna do Docker).
+
+8.  O `backend` (FastAPI) processa, fala com a OpenAI e retorna uma resposta JSON para o Nginx.
+
+9.  O Nginx retorna essa resposta para o navegador.
+
+10. O React atualiza a interface do chat com a resposta do agente.
+
+11. **Rodando Localmente (Alternativa):**
 
     Você precisará de dois terminais.
 
