@@ -152,12 +152,12 @@ flowchart TD;
 
     ```dotenv
     # --- Configuração da OpenAI ---
-    OPENAI_API_KEY=sk-proj-xxxxxxxxxxxxxxxxxxxxxxxx
-    # OPENAI_ASSISTANT_ID=asst_xxxxxxxxxxxxxxxx (Será preenchido pelo script)
+    OPENAI_API_KEY=sk-proj-XXXXXXXXXXXXXXXX
+    # OPENAI_ASSISTANT_ID=XXXXXXXXXXXXXXXXX (Será preenchido pelo script)
 
     # --- Configuração do Pipefy ---
-    PIPEFY_API_KEY=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.xxxxxxxx
-    PIPEFY_PIPE_ID=123456789
+    PIPEFY_API_KEY=XXXXXXXXXXXXXXXXXXXXXXXX
+    PIPEFY_PIPE_ID=XXXXXXXXXXX
     # Nome do campo de e-mail (como na UI do Pipefy)
     PIPEFY_EMAIL_FIELD_NAME="E-mail"
     # IDs dos campos
@@ -170,11 +170,11 @@ flowchart TD;
     PIPEFY_MEETING_TIME_FIELD_ID="data_e_hora_da_reuni_o"
 
     # --- Configuração do Cal.com ---
-    CAL_COM_API_KEY="cal_live_xxxxxxxxxxxxxxxxxxxxxxxxxx"
-    CAL_COM_EVENT_TYPE_ID="3758099" # ID numérico do seu Event Type
-    CAL_COM_EVENT_DURATION_MINUTES="30" # Duração em minutos do evento
-    CAL_COM_USERNAME="oseiasfarias" # Seu username no Cal.com
-    # CAL_COM_USER_ID="1873436" # ID numérico do seu usuário (opcional, removido da lógica atual)
+    CAL_COM_API_KEY=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+    CAL_COM_EVENT_TYPE_ID=XXXXXXX # ID numérico do seu Event Type
+    CAL_COM_EVENT_DURATION_MINUTES=30 # Duração em minutos do evento
+    CAL_COM_USERNAME=XXXXXXXXXXX # Seu username no Cal.com
+    # CAL_COM_USER_ID=XXXXXXXX # ID numérico do seu usuário (opcional, removido da lógica atual)
     ```
 
 3.  **Criar/Atualizar o Assistente OpenAI:**
