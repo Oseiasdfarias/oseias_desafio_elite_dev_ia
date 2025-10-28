@@ -16,7 +16,7 @@ const renderSimpleLinks = (textBlock, baseKey) => {
         // Verifica se a parte parece ser uma URL simples e começa com http
         if (simpleUrlRegex.test(part) && part.startsWith('http')) {
              // Limpeza simples para remover pontuação final
-             let cleanedHref = part.replace(/[.,;!?]*$/, '');
+            let cleanedHref = part.replace(/[.,;!?]*$/, '');
             try {
                 new URL(cleanedHref); // Valida
                 result.push(
@@ -27,21 +27,21 @@ const renderSimpleLinks = (textBlock, baseKey) => {
             } catch (_) {
                 // Se inválida, renderiza como texto com quebras de linha
                 result.push(...part.split('\n').map((line, lineIndex, arr) => (
-                   <React.Fragment key={`${baseKey}-sinvalid-${index}-${lineIndex}`}>
-                     {line}
-                     {lineIndex < arr.length - 1 && <br />}
-                   </React.Fragment>
-                 )));
+                    <React.Fragment key={`${baseKey}-sinvalid-${index}-${lineIndex}`}>
+                      {line}
+                      {lineIndex < arr.length - 1 && <br />}
+                    </React.Fragment>
+                  )));
                 console.warn(`URL simples inválida encontrada: ${cleanedHref} (original: ${part})`);
             }
         } else {
              // Se não for URL, renderiza como texto com quebras de linha
-             result.push(...part.split('\n').map((line, lineIndex, arr) => (
-               <React.Fragment key={`${baseKey}-stext-${index}-${lineIndex}`}>
-                 {line}
-                 {lineIndex < arr.length - 1 && <br />}
-               </React.Fragment>
-             )));
+              result.push(...part.split('\n').map((line, lineIndex, arr) => (
+                <React.Fragment key={`${baseKey}-stext-${index}-${lineIndex}`}>
+                  {line}
+                  {lineIndex < arr.length - 1 && <br />}
+                </React.Fragment>
+              )));
         }
     });
     return result; // Retorna um array de elementos React
@@ -131,7 +131,7 @@ const parseTimeSlots = (content) => {
         const match = line.trim().match(slotRegex);
         // Garante que a linha começa com um número/marcador ou contém apenas o slot
         if (match && match[1]) {
-             if (line.trim().startsWith(match[0]) || line.trim().match(/^\d+[.)]?\s+/) || line.trim() === match[0]) {
+              if (line.trim().startsWith(match[0]) || line.trim().match(/^\d+[.)]?\s+/) || line.trim() === match[0]) {
                 slots.push(match[1].trim());
             }
         }
@@ -189,12 +189,14 @@ function App() {
           if (data && data.response) {
             setMessages(prevMessages => [...prevMessages, { role: 'assistant', content: data.response }]);
           } else {
-             console.error("Resposta da API inesperada:", data);
-             setMessages(prevMessages => [...prevMessages, { role: 'assistant', content: `Desculpe, recebi uma resposta inesperada do servidor.` }]);
+              console.error("Resposta da API inesperada:", data);
+              setMessages(prevMessages => [...prevMessages, { role: 'assistant', content: `Desculpe, recebi uma resposta inesperada do servidor.` }]);
           }
       } catch (error) {
           console.error("Fetch error:", error);
-          setMessages(prevMessages => [...prevMessages, { role: 'assistant', content: `Desculpe, ocorreu um erro ao conectar ao servidor: ${error.message}. Verifique se o backend está rodando.` }]);
+          setMessages(prevMessages => [...prevMessages, { 
+            role: 'assistant',
+            content: `Desculpe, ocorreu um erro ao conectar ao servidor: ${error.message}. Verifique se o backend está rodando.` }]);
       }
     }
   };
@@ -232,15 +234,15 @@ function App() {
                             introText = msg.content.substring(0, firstSlotIndex);
                         } else {
                              // Fallback se não achar o primeiro slot
-                             introText = msg.content.split(slots[0] || '%%%%%')[0] || msg.content;
-                         }
+                              introText = msg.content.split(slots[0] || '%%%%%')[0] || msg.content;
+                          }
 
                         if (lastSlotEndIndex !== -1 && lastSlotEndIndex < msg.content.length) {
                              // Pega o texto APÓS o último slot encontrado
-                             afterText = msg.content.substring(lastSlotEndIndex).trim();
-                         } else {
-                             afterText = ''; // Garante que esteja vazio se não houver texto depois
-                         }
+                              afterText = msg.content.substring(lastSlotEndIndex).trim();
+                          } else {
+                              afterText = ''; // Garante que esteja vazio se não houver texto depois
+                          }
 
                         // Define o conteúdo renderizável como a estrutura de lista
                         contentToRender = (

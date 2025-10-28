@@ -68,7 +68,6 @@ Responsável por orquestrar a lógica de negócio, gerenciar sessões e se comun
       - **`calendar_service.py`**: Integra-se com a **API v1 do Cal.com** para buscar horários disponíveis (`/availability`) e agendar reuniões (`/bookings`), retornando o link da videoconferência (ex: Google Meet) ou um link de confirmação. Realiza a conversão de horários UTC para strings legíveis em `America/Sao_Paulo`.
   - **`models.py`**: Define os modelos de dados Pydantic usados pela FastAPI.
   - **`create_assistant.py`**: Script de *setup* único para criar/atualizar o Assistente na OpenAI com as instruções (incluindo a lógica de fuso horário) e definições de função corretas. Salva o `OPENAI_ASSISTANT_ID` no `.env`.
-  - **`test_cal_booking.py`**: Script para testar diretamente a função de agendamento do `CalendarService`.
   - **`Dockerfile`**: Define como construir a imagem Docker do backend, incluindo a instalação do locale `pt_BR.UTF-8`.
   - **`pyproject.toml` / `poetry.lock`**: Arquivos de gerenciamento de dependências do Poetry.
 
@@ -143,7 +142,7 @@ flowchart TD;
 1.  **Clone o repositório:**
 
     ```bash
-    git clone <seu-link-do-repositorio>
+    git clone git@github.com:Oseiasdfarias/oseias_desafio_elite_dev_ia.git
     cd desafio_elite_dev_ia
     ```
 
@@ -221,7 +220,7 @@ A configuração do Docker usa `docker-compose` para orquestrar os serviços de 
 
 6.  Nginx intercepta, remove `/api/`, encaminha para `http://backend:8000/chat`.
 
-7.  Backend (FastAPI) processa, chama OpenAI/[Cal.com/Pipefy](https://www.google.com/search?q=https://Cal.com/Pipefy), retorna JSON.
+7.  Backend (FastAPI) processa, chama OpenAI/[Cal.com](https://cal.com)/[Pipefy](https://www.pipefy.com/pt-br/), retorna JSON.
 
 8.  Nginx repassa a resposta ao navegador.
 

@@ -111,7 +111,7 @@ class OpenAIService:
                         
                         # Limpa mapeamento antigo se houver nova busca (para o mesmo thread)
                         if thread_id in temp_slot_mapping and not result.get("success"):
-                             del temp_slot_mapping[thread_id]
+                            del temp_slot_mapping[thread_id]
 
 
                     elif function_name == "agendarReuniao":
@@ -121,7 +121,7 @@ class OpenAIService:
                         lead_name = arguments.get("nome_lead", "Lead")
 
                         if not chosen_display_slot_start:
-                             output = {"success": False, "error": "Parâmetro 'data_inicio_display' não fornecido pelo assistente."}
+                            output = {"success": False, "error": "Parâmetro 'data_inicio_display' não fornecido pelo assistente."}
                         elif thread_id not in temp_slot_mapping or chosen_display_slot_start not in temp_slot_mapping[thread_id]:
                             output = {"success": False, "error": f"Horário escolhido ('{chosen_display_slot_start}') inválido ou não encontrado no mapeamento. Peça para o usuário escolher novamente da lista."}
                         else:

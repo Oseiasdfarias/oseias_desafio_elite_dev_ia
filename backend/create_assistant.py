@@ -29,7 +29,7 @@ def create_assistant():
                 - Inclua também `email_lead` e `nome_lead`.
                 - A função retornará o link da reunião (`meeting_link`) e a hora confirmada formatada para exibição (`start_time_display`). Ela também retornará a hora em UTC (`start_time_utc`) para uso interno.
                 - INFORME o lead sobre o sucesso, mostrando **exatamente** o `meeting_link` e a `start_time_display` recebidos.
-                  Exemplo de Resposta: "Perfeito! Sua reunião está agendada para [start_time_display]. O link é: [meeting_link]" 
+                    Exemplo de Resposta: "Perfeito! Sua reunião está agendada para [start_time_display]. O link é: [meeting_link]" 
             
             7.  **ATUALIZAÇÃO FINAL (IMPORTANTE):** - Após o `agendarReuniao` ser bem-sucedido (retornar `success: True`), chame a função `registrarLead` NOVAMENTE.
                 - Inclua o `meeting_link` retornado pela `agendarReuniao`.
