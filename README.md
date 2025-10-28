@@ -1,22 +1,20 @@
-<p align="center">
-<img src="https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54"/>
-<img src="https://img.shields.io/badge/fastapi-109989?style=for-the-badge&logo=FASTAPI&logoColor=white"/>
-<img src="https://img.shields.io/badge/OpenAI-412991?style=for-the-badge&logo=openai&logoColor=white"/>
-<img src="https://img.shields.io/badge/pydantic-E92063?style=for-the-badge&logo=pydantic&logoColor=white"/>
-<img src="https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB"/>
-<img src="https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white"/>
-<img src="https://img.shields.io/badge/git-%23F05033.svg?style=for-the-badge&logo=git&logoColor=white"/>
-</p>
+\<p align="center"\>
+\<img src="[https://img.shields.io/badge/python-3670A0?style=for-the-badge\&logo=python\&logoColor=ffdd54](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)"/\>
+\<img src="[https://img.shields.io/badge/fastapi-109989?style=for-the-badge\&logo=FASTAPI\&logoColor=white](https://img.shields.io/badge/fastapi-109989?style=for-the-badge&logo=FASTAPI&logoColor=white)"/\>
+\<img src="[https://img.shields.io/badge/OpenAI-412991?style=for-the-badge\&logo=openai\&logoColor=white](https://img.shields.io/badge/OpenAI-412991?style=for-the-badge&logo=openai&logoColor=white)"/\>
+\<img src="[https://img.shields.io/badge/pydantic-E92063?style=for-the-badge\&logo=pydantic\&logoColor=white](https://img.shields.io/badge/pydantic-E92063?style=for-the-badge&logo=pydantic&logoColor=white)"/\>
+\<img src="[https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge\&logo=react\&logoColor=%2361DAFB](https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB)"/\>
+\<img src="[https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge\&logo=docker\&logoColor=white](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)"/\>
+\<img src="[https://img.shields.io/badge/git-%23F05033.svg?style=for-the-badge\&logo=git\&logoColor=white](https://img.shields.io/badge/git-%23F05033.svg?style=for-the-badge&logo=git&logoColor=white)"/\>
+\</p\>
 
-<p align="center">
-  <img height="100px" src="./util/logo.png">
-</p>
-
-
+\<p align="center"\>
+  \<img height="100px" src="./util/logo.png"\>
+\</p\>
 
 # Desafio Elite Dev IA - SDR Agent
 
-Este projeto implementa um agente SDR (Sales Development Representative) automatizado utilizando a API Assistant da OpenAI, FastAPI para o backend e um webchat baseado em React para o frontend. O agente foi projetado para engajar leads, coletar informações, agendar reuniões e gerenciar dados de leads no Pipefy.
+Este projeto implementa um agente SDR (Sales Development Representative) automatizado utilizando a API Assistant da OpenAI, FastAPI para o backend e um webchat baseado em React para o frontend. O agente foi projetado para engajar leads, coletar informações, agendar reuniões (via Cal.com) e gerenciar dados de leads no Pipefy.
 
 ## Estrutura Detalhada do Projeto
 
@@ -36,11 +34,11 @@ graph TD
         F1["main.py (Rotas da API)"]
         F2["services/ (Pacote da Lógica de Serviços)"]
         F3["create_assistant.py (Setup do Assistente)"]
-        
+
         %% Links verticais dentro do subgraph
         F1 --> F2 --> F3
     end
-    
+
     %% Link de contenção (pontilhado)
     F -.-> F1
 
@@ -49,11 +47,11 @@ graph TD
         G1["App.js (Lógica da UI do Chat)"]
         G2["index.html (Ponto de Entrada)"]
         G3["package.json (Dependências)"]
-        
+
         %% Links verticais dentro do subgraph
         G1 --> G2 --> G3
     end
-    
+
     %% Link de contenção (pontilhado)
     G -.-> G1
 
@@ -63,26 +61,31 @@ graph TD
 
 Responsável por orquestrar a lógica de negócio, gerenciar sessões e se comunicar com as APIs externas.
 
-  - **`main.py`**: O entrypoint da aplicação FastAPI. Gerencia as rotas da API (como `/chat`, `/session`, `/history`), armazena as sessões ativas e associa IDs de sessão a *Threads* da OpenAI.
+  - **`main.py`**: O entrypoint da aplicação FastAPI. Gerencia as rotas da API (como `/chat`, `/session`, `/history`), armazena as sessões ativas (em memória, para desenvolvimento) e associa IDs de sessão a *Threads* da OpenAI. Adiciona `CORSMiddleware` para desenvolvimento local.
   - **`services/`**: Pacote contendo as classes de serviço:
-      - **`openai_service.py`**: Gerencia a interação com a OpenAI. Implementa a lógica de *loop* (`while run.status == "requires_action"`) para lidar com múltiplas chamadas de função sequenciais.
+      - **`openai_service.py`**: Gerencia a interação com a OpenAI. Implementa a lógica de *loop* (`while run.status == "requires_action"`) para lidar com múltiplas chamadas de função. Gerencia o mapeamento entre horários de exibição (São Paulo) e horários UTC para o assistente.
       - **`pipefy_service.py`**: Gerencia a comunicação com a API GraphQL do Pipefy. Implementa a lógica de `create_or_update_lead`.
-      - **`calendar_service.py`**: Uma **simulação** de uma API de agenda. Usa um arquivo `calendar.json` local.
-  - **`models.py`**: Define os modelos de dados Pydantic usados pela FastAPI para validação de requisições e respostas (ex: `Lead`, `ChatRequest`, `ChatResponse`).
-  - **`create_assistant.py`**: Um script de *setup* único. Deve ser executado uma vez para criar o Assistente na plataforma da OpenAI com as instruções e definições de função corretas. Ele salva o `OPENAI_ASSISTANT_ID` gerado no arquivo `.env`.
-  - **`calendar.json`**: Arquivo JSON usado como um "banco de dados" fake para a `CalendarService`.
+      - **`calendar_service.py`**: Integra-se com a **API v1 do Cal.com** para buscar horários disponíveis (`/availability`) e agendar reuniões (`/bookings`), retornando o link da videoconferência (ex: Google Meet) ou um link de confirmação. Realiza a conversão de horários UTC para strings legíveis em `America/Sao_Paulo`.
+  - **`models.py`**: Define os modelos de dados Pydantic usados pela FastAPI.
+  - **`create_assistant.py`**: Script de *setup* único para criar/atualizar o Assistente na OpenAI com as instruções (incluindo a lógica de fuso horário) e definições de função corretas. Salva o `OPENAI_ASSISTANT_ID` no `.env`.
+  - **`test_cal_booking.py`**: Script para testar diretamente a função de agendamento do `CalendarService`.
+  - **`Dockerfile`**: Define como construir a imagem Docker do backend, incluindo a instalação do locale `pt_BR.UTF-8`.
+  - **`pyproject.toml` / `poetry.lock`**: Arquivos de gerenciamento de dependências do Poetry.
 
 ### Frontend (React)
 
 Uma interface de chat simples (*single-page application*) para interagir com o backend.
 
-  - **`App.js`**: O componente principal do React. Gerencia o estado da conversa (`messages`), o input do usuário e a `session_id`. Utiliza a `Fetch API` para se comunicar com o backend (através do proxy `/api`).
-  - **`App.css`**: Arquivo de estilização para a janela de chat.
-  - **`index.js` / `index.html`**: Entrypoint padrão do Create React App.
+  - **`App.js`**: O componente principal do React. Gerencia o estado da conversa (`messages`), input do usuário, `session_id` e auto-scroll. Contém funções helper (`renderContentWithLinks`, `isTimeSlotMessage`, `parseTimeSlots`) para **formatar mensagens**, renderizar **listas de horários** de forma organizada e transformar **URLs** (incluindo as formatadas como Markdown ou com duplicações) em **links clicáveis**. Utiliza a `Fetch API` para se comunicar com o backend (diretamente em `http://localhost:8000` para dev local, ou via proxy `/api` quando dockerizado).
+  - **`App.css`**: Arquivo de estilização para a janela de chat, incluindo estilos para a lista de horários.
+  - **`index.js` / `public/index.html`**: Entrypoint padrão do Create React App.
+  - **`Dockerfile`**: Define o build multi-estágio para criar a imagem Docker do frontend (build React + servir com Nginx + patches de segurança).
+  - **`nginx.conf`**: Configuração do Nginx para atuar como servidor web e proxy reverso para a API do backend (usado na dockerização).
+  - **`package.json` / `package-lock.json`**: Arquivos de gerenciamento de dependências do Node.js.
 
 ### Fluxo de informação
 
-Este fluxograma ilustra como a informação transita pelo sistema, desde a mensagem do usuário até a resposta final, incluindo o loop de processamento para chamadas de função.
+Este fluxograma ilustra como a informação transita pelo sistema, desde a mensagem do usuário até a resposta final, incluindo o loop de processamento para chamadas de função e a interação com a API do Cal.com.
 
 ```mermaid
 flowchart TD;
@@ -91,32 +94,32 @@ flowchart TD;
     C --> D["Backend - FastAPI"];
     D --> E["OpenAIService: get_assistant_response"];
     E --> F["OpenAI API: Adiciona Mensagem e Cria Run"];
-    
+
     subgraph "Loop de Processamento (while...)"
         direction TB;
         F --> G{"Status do Run?"};
         G -- "Requires Action" --> M["OpenAIService: _handle_required_action"];
         M --> N{"Qual Função?"};
-        
+
         N -- "registrarLead" --> O["PipefyService: create_or_update_lead"];
         O --> P["API Externa: Pipefy (GraphQL)"];
-        
+
         N -- "oferecerHorarios" --> Q["CalendarService: get_available_slots"];
-        Q --> R[("Simulação: calendar.json - Leitura")];
+        Q --> R["API Externa: Cal.com (/availability)"];
 
         N -- "agendarReuniao" --> S["CalendarService: schedule_meeting"];
-        S --> T[("Simulação: calendar.json - Escrita")];
+        S --> T["API Externa: Cal.com (/bookings)"];
 
         P --> U["Submeter Tool Output"];
-        R --> U;
-        T --> U;
-        
+        R -- "(Retorna Slots UTC+Display)" --> U;
+        T -- "(Retorna Link+Horários UTC)" --> U;
+
         U --> G;
     end;
 
     G -- "Completed" --> H["Recuperar Mensagem Final"];
     H --> I["Backend: Enviar Resposta (JSON)"];
-    
+
     G -- "Failed / Timed Out" --> L["Formatar Mensagem de Erro"];
     L --> I;
 
@@ -131,8 +134,9 @@ flowchart TD;
 
   - **Docker e Docker Compose** (Recomendado)
   - *Ou (para desenvolvimento local)*:
-      - Python 3.9+ e `pip`
+      - Python 3.9+ e [Poetry](https://python-poetry.org/)
       - Node.js 16+ e `npm`
+      - Locale `pt_BR.UTF-8` instalado no sistema (para formatação de datas)
 
 ### Configuração
 
@@ -144,28 +148,19 @@ flowchart TD;
     ```
 
 2.  **Variáveis de Ambiente (Crítico\!)**
-
-    Crie um arquivo `.env` na raiz do projeto. Este arquivo é essencial para o `backend` e o `frontend` (via Docker Compose) funcionarem.
+    Crie um arquivo `.env` na raiz do projeto.
 
     ```dotenv
-    # --- Chave da OpenAI ---
-    OPENAI_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxx
-
-    # Esta linha será preenchida automaticamente pelo script create_assistant.py
-    # OPENAI_ASSISTANT_ID=asst_xxxxxxxxxxxxxxxx
+    # --- Configuração da OpenAI ---
+    OPENAI_API_KEY=sk-proj-xxxxxxxxxxxxxxxxxxxxxxxx
+    # OPENAI_ASSISTANT_ID=asst_xxxxxxxxxxxxxxxx (Será preenchido pelo script)
 
     # --- Configuração do Pipefy ---
     PIPEFY_API_KEY=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.xxxxxxxx
     PIPEFY_PIPE_ID=123456789
-
-    # --- IDs dos Campos do Pipefy ---
-    # É OBRIGATÓRIO preencher estes IDs para a integração funcionar.
-    # Você pode encontrar o ID de cada campo na URL do Pipefy ou via API.
-
-    # O NOME do campo de e-mail (exatamente como aparece na UI do Pipefy)
+    # Nome do campo de e-mail (como na UI do Pipefy)
     PIPEFY_EMAIL_FIELD_NAME="E-mail"
-
-    # Os IDs dos campos
+    # IDs dos campos
     PIPEFY_NAME_FIELD_ID="nome_do_lead"
     PIPEFY_EMAIL_FIELD_ID="e_mail"
     PIPEFY_COMPANY_FIELD_ID="empresa"
@@ -173,97 +168,72 @@ flowchart TD;
     PIPEFY_INTEREST_FIELD_ID="checklist_vertical"
     PIPEFY_MEETING_LINK_FIELD_ID="link_da_reuni_o"
     PIPEFY_MEETING_TIME_FIELD_ID="data_e_hora_da_reuni_o"
+
+    # --- Configuração do Cal.com ---
+    CAL_COM_API_KEY="cal_live_xxxxxxxxxxxxxxxxxxxxxxxxxx"
+    CAL_COM_EVENT_TYPE_ID="3758099" # ID numérico do seu Event Type
+    CAL_COM_EVENT_DURATION_MINUTES="30" # Duração em minutos do evento
+    CAL_COM_USERNAME="oseiasfarias" # Seu username no Cal.com
+    # CAL_COM_USER_ID="1873436" # ID numérico do seu usuário (opcional, removido da lógica atual)
     ```
 
-3.  **Criar o Assistente OpenAI:**
-
-    Antes de iniciar o servidor, você precisa criar o assistente na OpenAI. O Docker Compose pode fazer isso, mas é recomendado executar manually na primeira vez para garantir:
+3.  **Criar/Atualizar o Assistente OpenAI:**
+    Execute este script **uma vez** (ou sempre que alterar as instruções/ferramentas).
 
     ```bash
-    # (Opcional, se não for usar Docker) Crie um venv
-    # python -m venv venv
-    # source venv/bin/activate (ou .\venv\Scripts\activate no Windows)
-
-    pip install -r backend/requirements.txt
-    python backend/create_assistant.py
+    cd backend
+    poetry install # Instala dependências do backend se ainda não o fez
+    poetry run python create_assistant.py
+    cd ..
     ```
 
-    Isso criará o assistente e adicionará o `OPENAI_ASSISTANT_ID` ao seu arquivo `.env`.
+    Isso criará/atualizará o assistente e adicionará/atualizará o `OPENAI_ASSISTANT_ID` no seu arquivo `.env`.
 
 4.  **Rodando com Docker (Recomendado):**
-
-    Na raiz do projeto, execute:
+    Na raiz do projeto:
 
     ```bash
     docker compose up --build
     ```
 
-    O backend estará acessível em `http://localhost:8000` e o frontend em `http://localhost:3000`.
+    O backend estará em `http://localhost:8000` (API docs em `/docs`) e o frontend em `http://localhost:3000`.
 
 ## Arquitetura de Dockerização
 
-A configuração do Docker neste projeto é projetada para simular um ambiente de produção real usando `docker-compose` para orquestrar múltiplos serviços. A arquitetura consiste em um **proxy reverso** (Nginx) que serve o frontend e encaminha as chamadas de API para o backend.
+A configuração do Docker usa `docker-compose` para orquestrar os serviços de `backend` e `frontend`, simulando um ambiente de produção com um **proxy reverso** (Nginx).
 
-Aqui está o papel de cada arquivo:
-
-1.  **`docker-compose.yml` (O Orquestrador)**
-
-      * Define e conecta os dois serviços principais: `backend` e `frontend`.
-      * `backend`: Constrói a imagem do `backend/Dockerfile` e expõe a porta `8000`. Ele também lê o arquivo `.env` da raiz para obter as chaves de API.
-      * `frontend`: Constrói a imagem do `frontend/Dockerfile` e mapeia a porta `3000` do seu computador para a porta `80` do Nginx dentro do contêiner.
-
-2.  **`backend/Dockerfile` (Servidor da API)**
-
-      * Usa uma imagem oficial do Python.
-      * Instala as dependências do `requirements.txt`.
-      * Copia o código-fonte do backend.
-      * Inicia o servidor `uvicorn` na porta `8000`, escutando em `0.0.0.0` (essencial para ser acessível por outros contêineres).
-
-3.  **`frontend/Dockerfile` (Servidor Web + Proxy)**
-
-      * Este é um **build multi-estágio** para otimização:
-      * **Estágio 1 (`build`):** Usa uma imagem `node` para instalar as dependências (`npm install`) e "compilar" o aplicativo React (`npm run build`). O resultado é uma pasta `build/` com arquivos estáticos (HTML, CSS, JS).
-      * **Estágio 2 (`serve`):** Usa uma imagem leve do `nginx`. Os arquivos estáticos da pasta `build/` (do estágio 1) são copiados para o Nginx.
-      * **Segurança:** O comando `RUN apk update && apk upgrade` é incluído para corrigir vulnerabilidades de segurança conhecidas na imagem base do Nginx.
-
-4.  **`frontend/nginx.conf` (O Proxy Reverso)**
-
-      * Este é o cérebro da comunicação frontend-backend.
-      * `location /`: Diz ao Nginx para servir os arquivos estáticos do React (o `index.html` e seus assets).
-      * `location /api/`: Diz ao Nginx para interceptar qualquer requisição que comece com `/api/` (ex: `/api/chat`), remover o prefixo `/api/` e encaminhar a requisição para o serviço `backend` (resolvido pelo Docker como `http://backend:8000/chat`).
+1.  **`docker-compose.yml`**: Define os serviços `backend` (FastAPI) e `frontend` (React+Nginx), passa as variáveis do `.env` e mapeia as portas (`8000` para backend, `3000` para frontend).
+2.  **`backend/Dockerfile`**: Constrói a imagem Python, instala dependências (via Poetry), configura o locale `pt_BR.UTF-8` e inicia o `uvicorn`.
+3.  **`frontend/Dockerfile`**: Build multi-estágio: instala dependências Node, compila o React (`npm run build`), depois copia os arquivos estáticos para uma imagem Nginx e aplica patches de segurança (`apk upgrade`).
+4.  **`frontend/nginx.conf`**: Configura o Nginx para servir os arquivos React (`location /`) e redirecionar chamadas `/api/` para o serviço `backend` na rede Docker (`location /api/`).
 
 ### Fluxo de um Pedido de Chat (Dockerizado)
 
-1.  O usuário acessa `http://localhost:3000` no navegador.
+1.  Usuário acessa `http://localhost:3000`.
 
-2.  O Nginx (no contêiner `frontend`) entrega o aplicativo React (HTML, CSS, JS).
+2.  Nginx (contêiner `frontend`) serve o app React.
 
-3.  O usuário envia uma mensagem ("Olá").
+3.  Usuário envia mensagem.
 
-4.  O código React (`App.js`) executa `fetch('/api/chat', ...)`.
+4.  React faz `fetch('/api/chat', ...)`.
 
-5.  O navegador envia essa requisição para `http://localhost:3000/api/chat`.
+5.  Navegador envia para `http://localhost:3000/api/chat`.
 
-6.  O Nginx intercepta a requisição. A `location /api/` é ativada.
+6.  Nginx intercepta, remove `/api/`, encaminha para `http://backend:8000/chat`.
 
-7.  O Nginx encaminha a requisição para `http://backend:8000/chat` (usando a rede interna do Docker).
+7.  Backend (FastAPI) processa, chama OpenAI/[Cal.com/Pipefy](https://www.google.com/search?q=https://Cal.com/Pipefy), retorna JSON.
 
-8.  O `backend` (FastAPI) processa, fala com a OpenAI e retorna uma resposta JSON para o Nginx.
+8.  Nginx repassa a resposta ao navegador.
 
-9.  O Nginx retorna essa resposta para o navegador.
+9.  React atualiza o chat.
 
-10. O React atualiza a interface do chat com a resposta do agente.
-
-11. **Rodando Localmente (Alternativa):**
-
-    Você precisará de dois terminais.
-
+10. **Rodando Localmente (Alternativa):**
     *Terminal 1: Backend*
 
     ```bash
     cd backend
-    pip install -r requirements.txt
-    uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    poetry install
+    poetry run uvicorn main:app --host 0.0.0.0 --port 8000 --reload
     ```
 
     *Terminal 2: Frontend*
@@ -274,79 +244,83 @@ Aqui está o papel de cada arquivo:
     npm start
     ```
 
-    O frontend estará em `http://localhost:3000`.
+    O frontend estará em `http://localhost:3000`. **Certifique-se que o `App.js` está usando `fetch('http://localhost:8000/chat', ...)` e que o CORS está habilitado no `backend/main.py` para este modo.**
 
 ## Endpoints da API (Backend)
 
-  - **GET /health**: Verificação de saúde da API e serviços.
-  - **POST /chat**: Envia uma mensagem para o agente SDR.
-      - Corpo: `{"session_id": "string", "message": "string"}`
-      - Resposta: `{"response": "string", "session_id": "string", "thread_id": "string"}`
-  - **POST /session**: Cria uma nova sessão de chat (novo thread).
-      - Resposta: `{"session_id": "string", "thread_id": "string", ...}`
-  - **GET /sessions**: Lista todas as sessões ativas na memória.
-  - **GET /history/{session\_id}**: Obtém o histórico de mensagens formatado de um thread.
-  - **DELETE /session/{session\_id}**: Remove uma sessão da memória e deleta o thread na OpenAI.
+  - **GET /health**: Verificação de saúde.
+  - **POST /chat**: Envia mensagem e obtém resposta.
+  - **POST /session**: Cria nova sessão.
+  - **GET /sessions**: Lista sessões ativas (em memória).
+  - **GET /history/{session\_id}**: Obtém histórico.
+  - **DELETE /session/{session\_id}**: Deleta sessão e thread OpenAI.
 
 ## Como Usar
 
-1.  **Inicie o backend e frontend** (via Docker ou Localmente).
+1.  **Inicie os serviços** (Docker ou Localmente).
 
-2.  **Abra o webchat** em `http://localhost:3000`.
+2.  **Abra o webchat** (`http://localhost:3000`).
 
-3.  **Interaja com o agente SDR.** O chat rolará automaticamente para as novas mensagens.
+3.  **Interaja com o agente.** Siga o fluxo natural da conversa. O agente irá:
 
-    **Cenário 1: Agendamento Completo (Teste do Fluxo)**
+      * Apresentar-se.
+      * Coletar Nome, Email, Empresa e Necessidade.
+      * Confirmar o interesse em agendar uma reunião.
+      * Buscar e apresentar horários disponíveis (já convertidos para o fuso horário de São Paulo).
+      * Aguardar sua escolha de horário.
+      * Confirmar o agendamento, fornecendo o link da reunião (Google Meet ou link de confirmação do Cal.com).
+      * Salvar/atualizar o lead no Pipefy com todos os dados coletados, incluindo os detalhes da reunião.
 
-      * **Você:** `Olá, gostaria de saber mais sobre o produto de vocês.`
-      * **Agente:** (Pergunta seu nome)
-      * **Você:** `Meu nome é Oseias.`
-      * **Agente:** (Pergunta seu email)
-      * **Você:** `oseias@tech.com`
-      * **Agente:** (Pergunta sua empresa)
-      * **Você:** `TechInfo`
-      * **Agente:** (Pergunta sua necessidade)
-      * **Você:** `Preciso de uma solução para automatizar meu processo de vendas.`
-      * **Agente:** (Neste momento, ele chama `registrarLead` pela 1ª vez)
-      * **Agente:** `Entendi. Você gostaria de agendar uma reunião com um de nossos especialistas?`
-      * **Você:** `Sim, gostaria.`
-      * **Agente:** (Chama `oferecerHorarios` e lista os horários)
-      * **Você:** `Pode ser na segunda-feira às 10h.`
-      * **Agente:** (Chama `agendarReuniao`, que retorna sucesso e o link)
-      * **Agente:** (Neste momento, ele chama `registrarLead` pela 2ª vez, agora com o link e a data da reunião)
-      * **Agente:** `Perfeito! Agendado. Você receberá o link da reunião no seu e-mail.`
+    **Cenário Típico de Agendamento:**
 
-    **Cenário 2: Recusa de Reunião**
+      * **Você:** `Olá`
+      * **Agente:** (Apresentação)
+      * **Você:** `Gostaria de informações.`
+      * **Agente:** (Pergunta o Nome)
+      * **Você:** `Meu nome é Maria.`
+      * **Agente:** (Pergunta o Email)
+      * **Você:** `maria@exemplo.com`
+      * **Agente:** (Pergunta a Empresa)
+      * **Você:** `Exemplo Corp.`
+      * **Agente:** (Pergunta a Necessidade)
+      * **Você:** `Preciso melhorar minhas vendas.`
+      * **Agente:** (Confirma interesse em agendar)
+      * **Você:** `Sim`
+      * **Agente:** (Apresenta a lista de horários formatados, ex: "1. 29 de Outubro às 10:00...")
+      * **Você:** `Pode ser 29 de Outubro às 10:00`
+      * **Agente:** (Confirma o agendamento com link e hora formatada)
 
-      * ... (Coleta de dados) ...
-      * **Agente:** `Você gostaria de agendar uma reunião com um de nossos especialistas?`
-      * **Você:** `Não, obrigado. Só estou pesquisando.`
-      * **Agente:** (Encerra a conversa educadamente. O lead já foi registrado no Pipefy no passo anterior).
+    **Cenário de Recusa:**
 
-4.  **Verifique o Pipefy:**
+      * ... (Após coletar os dados) ...
+      * **Agente:** `Gostaria de agendar...?`
+      * **Você:** `Não, obrigado.`
+      * **Agente:** (Agradece e encerra. O lead já foi salvo no Pipefy).
 
-    Após cada conversa, um novo card deve ser criado ou atualizado no seu funil do Pipefy com as informações do lead. Se o agendamento foi feito, os campos de link e data da reunião também estarão preenchidos.
+4.  **Verifique Cal.com e Pipefy:** Após um agendamento bem-sucedido, verifique se a reunião aparece no seu calendário Cal.com (e no Google Calendar vinculado) no horário correto (convertido para seu fuso). Verifique também se o card correspondente no Pipefy foi criado ou atualizado com o link e a data/hora (em UTC) da reunião.
 
 ## Funcionalidades Principais
 
-  - **Coleta Automática de Informações**: O agente coleta nome, email, empresa e necessidades.
-  - **Integração com Pipefy**: Criação e **atualização** automática de cards, evitando duplicatas por e-mail.
-  - **Agendamento de Reuniões**: Integração com uma simulação de calendário (`calendar.json`).
-  - **Manutenção de Contexto**: Utiliza Threads da OpenAI para manter o contexto completo.
-  - **Interface Web Amigável**: Chat intuitivo com rolagem automática para novas mensagens.
+  - **Coleta Automática de Informações**: Nome, email, empresa, necessidades.
+  - **Integração com Pipefy**: Criação/atualização de cards via API GraphQL.
+  - **Agendamento de Reuniões**: Integração com **Cal.com API v1** para buscar horários e agendar, obtendo link real de videoconferência.
+  - **Manutenção de Contexto**: Utiliza Threads da OpenAI.
+  - **Interface Web Amigável**: Chat React com auto-scroll, formatação de horários em lista e renderização de links clicáveis.
+  - **Tratamento de Fuso Horário**: Lógica centralizada no backend Python para apresentar horários em `America/Sao_Paulo` ao usuário, enquanto usa UTC para APIs.
 
 ## Tecnologias Utilizadas
 
-  - **Backend**: FastAPI, Python, OpenAI Assistant API
-  - **Frontend**: React (Hooks), Fetch API
-  - **Integrações**: Pipefy API (GraphQL), Simulação de Agenda (`calendar.json`)
-  - **Infraestrutura**: Docker, Docker Compose
+  - **Backend**: FastAPI, Python, OpenAI Assistant API, Poetry, python-dateutil, httpx
+  - **Frontend**: React (Hooks), Fetch API, CSS
+  - **Integrações**: Pipefy API (GraphQL), **Cal.com API v1**
+  - **Infraestrutura**: Docker, Docker Compose, Nginx
 
 ## Próximos Passos
 
-  - [ ] Substituir `calendar.json` por uma API real (Google Calendar, Cal.com, etc.).
+  - [ ] Implementar armazenamento persistente para sessões (ex: Redis/Vercel KV) em vez de memória (necessário para deploy serverless).
+  - [ ] Adicionar testes unitários/integração.
   - [ ] Implementar autenticação de usuários (se necessário).
   - [ ] Adicionar mais integrações de calendário (Outlook, etc.).
   - [ ] Implementar relatórios analíticos de conversão.
-  - [ ] Adicionar suporte a múltiplos idiomas.
+  - [ ] Adicionar suporte a múltiplos idiomas (exigiria mais locales no Docker e instruções ao assistente).
   - [ ] Implementar sistema de follow-up automático por e-mail.
