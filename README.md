@@ -1,4 +1,4 @@
-<p align="center"\>
+<p align="center">
 <img src="[https://img.shields.io/badge/python-3670A0?style=for-the-badge\&logo=python\&logoColor=ffdd54](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)"/>
 <img src="[https://img.shields.io/badge/fastapi-109989?style=for-the-badge\&logo=FASTAPI\&logoColor=white](https://img.shields.io/badge/fastapi-109989?style=for-the-badge&logo=FASTAPI&logoColor=white)"/>
 <img src="[https://img.shields.io/badge/OpenAI-412991?style=for-the-badge\&logo=openai\&logoColor=white](https://img.shields.io/badge/OpenAI-412991?style=for-the-badge&logo=openai&logoColor=white)"/>
@@ -8,9 +8,9 @@
 <img src="[https://img.shields.io/badge/git-%23F05033.svg?style=for-the-badge\&logo=git\&logoColor=white](https://img.shields.io/badge/git-%23F05033.svg?style=for-the-badge&logo=git&logoColor=white)"/>
 </p\>
 
-\<p align="center"\>
-  \<img height="100px" src="./util/logo.png"\>
-\</p\>
+<p align="center">
+  <img height="100px" src="./util/logo.png">
+</p\>
 
 # Desafio Elite Dev IA - SDR Agent
 
