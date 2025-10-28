@@ -1,26 +1,30 @@
 # === Arquivos de Configuração e Segredos ===
-# NUNCA comente esta linha. Contém suas chaves de API.
 .env
-.env.local
 .env.*
+.env.local # Boa prática adicionar este também
 
 # === Banco de Dados Fake ===
-# Ignora o arquivo de calendário para não salvar reuniões de teste no git
-calendar.json
+# calendar.json # Removido, pois o arquivo foi deletado do projeto
 
-# === Dependências do Python (Backend) ===
+# === Dependências e Arquivos Gerados (Python - Backend) ===
 /backend/venv/
 /backend/__pycache__/
 *.pyc
 .pytest_cache/
 
-# === Dependências do Node.js (Frontend) ===
+
+# === Dependências e Arquivos Gerados (Node.js - Frontend) ===
 /frontend/node_modules/
 /frontend/build/
 /frontend/dist/
 npm-debug.log*
 yarn-error.log*
+yarn.lock # Se usar yarn
+package-lock.json # Se usar npm (geralmente é bom ignorar se todos usam o mesmo manager) - DECIDA SE QUER IGNORAR OU NÃO
+
+# === Arquivos Diversos ===
 desafio_elite.md
+# GRMINI.md # Arquivo gerado? Provavelmente ignorar.
 
 # === Arquivos de Sistema Operacional ===
 .DS_Store
@@ -29,3 +33,11 @@ ehthumbs.db
 ._*
 
 # === Arquivos de IDE ===
+.vscode/
+.idea/
+*.iml
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw? # Arquivos swap do Vim

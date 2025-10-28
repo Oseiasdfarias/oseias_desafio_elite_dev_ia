@@ -64,3 +64,26 @@
   border-radius: 4px;
   cursor: pointer;
 }
+/* Adicione isso ao final do seu App.css */
+
+.message.assistant ul.time-slots-list {
+  list-style: none; /* Remove os marcadores padrão */
+  padding-left: 15px; /* Adiciona um pequeno recuo */
+  margin-top: 8px; /* Espaço acima da lista */
+  margin-bottom: 5px; /* Espaço abaixo da lista */
+}
+
+.message.assistant ul.time-slots-list li {
+  margin-bottom: 5px; /* Espaço entre os itens da lista */
+  font-weight: 500; /* Deixa os horários um pouco mais destacados */
+}
+
+/* Estilo para links dentro das mensagens */
+.message a {
+  color: #007bff; /* Cor padrão de link */
+  text-decoration: underline;
+}
+
+.message a:hover {
+  color: #0056b3;
+}
