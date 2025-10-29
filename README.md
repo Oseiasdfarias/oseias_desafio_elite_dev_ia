@@ -4,7 +4,9 @@
 <img src="https://img.shields.io/badge/OpenAI-412991?style=for-the-badge&logo=openai&logoColor=white"/>
 <img src="https://img.shields.io/badge/pydantic-E92063?style=for-the-badge&logo=pydantic&logoColor=white"/>
 <img src="https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB"/>
-<img src="https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white"/>
+<img src="https://img.shields.io/badge/Vercel-%23000000.svg?style=for-the-badge&logo=vercel&logoColor=white"/>
+<img src="https://img.shields.io/badge/redis-%23DD0031.svg?style=for-the-badge&logo=redis&logoColor=white"/>
+<img src="https://img.shields.io/badge/upstash-%23FF0055.svg?style=for-the-badge&logo=upstash&logoColor=white"/>
 <img src="https://img.shields.io/badge/git-%23F05033.svg?style=for-the-badge&logo=git&logoColor=white"/>
 </p>
 
@@ -12,31 +14,30 @@
   <img height="100px" src="./util/logo.png">
 </p>
 
+
 # Desafio Elite Dev IA - SDR Agent
 
-Este projeto implementa um agente SDR (Sales Development Representative) automatizado utilizando a API Assistant da OpenAI, FastAPI para o backend e um webchat baseado em React para o frontend. O agente foi projetado para engajar leads, coletar informações, agendar reuniões (via Cal.com) e gerenciar dados de leads no Pipefy.
+Este projeto implementa um agente SDR (Sales Development Representative) automatizado utilizando a API Assistant da OpenAI, FastAPI (como função serverless na Vercel) para o backend, Redis (Upstash) para gerenciamento de sessão, e um webchat baseado em React para o frontend. O agente foi projetado para engajar leads, coletar informações, agendar reuniões (via Cal.com) e gerenciar dados de leads no Pipefy.
 
-## Estrutura Detalhada do Projeto
+## Estrutura Detalhada do Projeto (Pós-Refatoração para Vercel)
 
-O projeto é dividido em duas partes principais: `backend` e `frontend`.
+O projeto é estruturado como um monorepo para deploy na Vercel.
 
 ```mermaid
 graph TD
     A[("SDR Agent (Projeto)")]
 
     %% Fluxo Vertical Encadeado
-    A --> B["Arquivos de Configuração (README, .env, .gitignore)"]
-    B --> F["backend/ (Lógica do Servidor)"]
-    F --> G["frontend/ (Interface do Chat)"]
+    A --> B["Arquivos de Configuração (README, .env, .gitignore, vercel.json)"]
+    B --> F["api/ (Backend Serverless)"]
+    F --> G["frontend/ (Interface React)"]
 
-    %% Detalhes do Backend
-    subgraph "Backend (FastAPI)"
-        F1["main.py (Rotas da API)"]
+    %% Detalhes do Backend (API)
+    subgraph "API (FastAPI Serverless)"
+        F1["index.py (Entrypoint FastAPI + Rotas + Redis)"]
         F2["services/ (Pacote da Lógica de Serviços)"]
-        F3["create_assistant.py (Setup do Assistente)"]
-
-        %% Links verticais dentro do subgraph
-        F1 --> F2 --> F3
+        F3["create_assistant.py (Setup do Assistente - Executar localmente)"]
+        F4["requirements.txt (Dependências Python)"]
     end
 
     %% Link de contenção (pontilhado)
@@ -45,11 +46,8 @@ graph TD
     %% Detalhes do Frontend
     subgraph "Frontend (React)"
         G1["App.js (Lógica da UI do Chat)"]
-        G2["index.html (Ponto de Entrada)"]
-        G3["package.json (Dependências)"]
-
-        %% Links verticais dentro do subgraph
-        G1 --> G2 --> G3
+        G2["public/index.html (Ponto de Entrada HTML)"]
+        G3["package.json (Dependências JS)"]
     end
 
     %% Link de contenção (pontilhado)
@@ -57,73 +55,75 @@ graph TD
 
 ```
 
-### Backend (Python/FastAPI)
+### API (Backend Serverless - Python/FastAPI)
 
-Responsável por orquestrar a lógica de negócio, gerenciar sessões e se comunicar com as APIs externas.
+Localizada na pasta `api/`, esta parte é implantada como uma Função Serverless Python na Vercel.
 
-  - **`main.py`**: O entrypoint da aplicação FastAPI. Gerencia as rotas da API (como `/chat`, `/session`, `/history`), armazena as sessões ativas (em memória, para desenvolvimento) e associa IDs de sessão a *Threads* da OpenAI. Adiciona `CORSMiddleware` para desenvolvimento local.
-  - **`services/`**: Pacote contendo as classes de serviço:
-      - **`openai_service.py`**: Gerencia a interação com a OpenAI. Implementa a lógica de *loop* (`while run.status == "requires_action"`) para lidar com múltiplas chamadas de função. Gerencia o mapeamento entre horários de exibição (São Paulo) e horários UTC para o assistente.
-      - **`pipefy_service.py`**: Gerencia a comunicação com a API GraphQL do Pipefy. Implementa a lógica de `create_or_update_lead`.
-      - **`calendar_service.py`**: Integra-se com a **API v1 do Cal.com** para buscar horários disponíveis (`/availability`) e agendar reuniões (`/bookings`), retornando o link da videoconferência (ex: Google Meet) ou um link de confirmação. Realiza a conversão de horários UTC para strings legíveis em `America/Sao_Paulo`.
-  - **`models.py`**: Define os modelos de dados Pydantic usados pela FastAPI.
-  - **`create_assistant.py`**: Script de *setup* único para criar/atualizar o Assistente na OpenAI com as instruções (incluindo a lógica de fuso horário) e definições de função corretas. Salva o `OPENAI_ASSISTANT_ID` no `.env`.
-  - **`Dockerfile`**: Define como construir a imagem Docker do backend, incluindo a instalação do locale `pt_BR.UTF-8`.
-  - **`pyproject.toml` / `poetry.lock`**: Arquivos de gerenciamento de dependências do Poetry.
+  - **`api/index.py`**: O entrypoint FastAPI. Define as rotas (sem o prefixo `/api`). Gerencia a conexão com o **Redis (Upstash)** usando `redis.asyncio` e injeção de dependências (`Depends`) para buscar/salvar `thread_id`s, garantindo a persistência da sessão.
+  - **`api/services/`**: Pacote contendo as classes de serviço:
+      - **`openai_service.py`**: Orquestra a interação com a OpenAI Assistants API, incluindo o loop de tratamento de ações e o mapeamento de horários UTC/São Paulo.
+      - **`pipefy_service.py`**: Interage com a API GraphQL do Pipefy.
+      - **`calendar_service.py`**: Interage com a API v1 do **Cal.com** (`/availability`, `/bookings`) e formata horários para `America/Sao_Paulo`.
+  - **`api/models.py`**: Define os modelos de dados Pydantic.
+  - **`api/create_assistant.py`**: Script para executar **localmente** para criar/atualizar o Assistente OpenAI e salvar o ID no `.env`.
+  - **`api/requirements.txt`**: Lista de dependências Python para a Vercel.
 
 ### Frontend (React)
 
-Uma interface de chat simples (*single-page application*) para interagir com o backend.
+Localizado na pasta `frontend/`, implantado como um site estático na Vercel.
 
-  - **`App.js`**: O componente principal do React. Gerencia o estado da conversa (`messages`), input do usuário, `session_id` e auto-scroll. Contém funções helper (`renderContentWithLinks`, `isTimeSlotMessage`, `parseTimeSlots`) para **formatar mensagens**, renderizar **listas de horários** de forma organizada e transformar **URLs** (incluindo as formatadas como Markdown ou com duplicações) em **links clicáveis**. Utiliza a `Fetch API` para se comunicar com o backend (diretamente em `http://localhost:8000` para dev local, ou via proxy `/api` quando dockerizado).
-  - **`App.css`**: Arquivo de estilização para a janela de chat, incluindo estilos para a lista de horários.
-  - **`index.js` / `public/index.html`**: Entrypoint padrão do Create React App.
-  - **`Dockerfile`**: Define o build multi-estágio para criar a imagem Docker do frontend (build React + servir com Nginx + patches de segurança).
-  - **`nginx.conf`**: Configuração do Nginx para atuar como servidor web e proxy reverso para a API do backend (usado na dockerização).
-  - **`package.json` / `package-lock.json`**: Arquivos de gerenciamento de dependências do Node.js.
+  - **`frontend/src/App.js`**: Componente principal React. Gerencia estado do chat, input, `session_id`, auto-scroll. Formata mensagens, renderiza listas de horários e links clicáveis. Faz chamadas `fetch` para **`/api/...`** (roteadas pela Vercel).
+  - **`frontend/src/App.css`**: Estilos.
+  - **`frontend/public/index.html`**: Template HTML base.
+  - **`frontend/package.json` / `package-lock.json`**: Dependências Node.js.
 
-### Fluxo de informação
+### Fluxo de informação (Com Redis)
 
-Este fluxograma ilustra como a informação transita pelo sistema, desde a mensagem do usuário até a resposta final, incluindo o loop de processamento para chamadas de função e a interação com a API do Cal.com.
+O fluxograma ilustra como a informação transita, incluindo a busca/salvamento do `thread_id` no Redis a cada chamada.
 
 ```mermaid
 flowchart TD;
     A[/"Usuário (Navegador)"/] --> B("Frontend - React UI");
-    B -- "Envia Mensagem" --> C{"POST /chat (JSON)"};
-    C --> D["Backend - FastAPI"];
-    D --> E["OpenAIService: get_assistant_response"];
-    E --> F["OpenAI API: Adiciona Mensagem e Cria Run"];
+    B -- "Envia Mensagem c/ SessionID" --> C{"Vercel Edge Network"};
+    C -- "/api/chat" --> D["API Function (api/index.py - FastAPI)"];
+    D --> R1{"Buscar ThreadID no Redis"};
+    R1 -- "Não Encontrado" --> R2["OpenAIService: create_thread()"];
+    R2 --> R3["Salvar ThreadID no Redis (c/ expiração)"];
+    R1 -- "Encontrado" --> E["OpenAIService: get_assistant_response(thread_id)"];
+    R3 --> E;
+    E --> F["OpenAI API: Add Msg & Run"];
 
-    subgraph "Loop de Processamento (while...)"
+    subgraph "Loop de Processamento (while requires_action)"
         direction TB;
         F --> G{"Status do Run?"};
-        G -- "Requires Action" --> M["OpenAIService: _handle_required_action"];
+        G -- "Requires Action" --> M["_handle_required_action"];
         M --> N{"Qual Função?"};
 
-        N -- "registrarLead" --> O["PipefyService: create_or_update_lead"];
-        O --> P["API Externa: Pipefy (GraphQL)"];
+        N -- "registrarLead" --> O["PipefyService"];
+        O --> P["API: Pipefy"];
 
-        N -- "oferecerHorarios" --> Q["CalendarService: get_available_slots"];
-        Q --> R["API Externa: Cal.com (/availability)"];
+        N -- "oferecerHorarios" --> Q["CalendarService"];
+        Q --> R["API: Cal.com (/availability)"];
 
-        N -- "agendarReuniao" --> S["CalendarService: schedule_meeting"];
-        S --> T["API Externa: Cal.com (/bookings)"];
+        N -- "agendarReuniao" --> S["CalendarService"];
+        S --> T["API: Cal.com (/bookings)"];
 
         P --> U["Submeter Tool Output"];
-        R -- "(Retorna Slots UTC+Display)" --> U;
-        T -- "(Retorna Link+Horários UTC)" --> U;
+        R -- "(Slots UTC+Display)" --> U;
+        T -- "(Link+Horários UTC)" --> U;
 
         U --> G;
     end;
 
     G -- "Completed" --> H["Recuperar Mensagem Final"];
-    H --> I["Backend: Enviar Resposta (JSON)"];
+    H --> I["API Function: Enviar Resposta (JSON)"];
 
     G -- "Failed / Timed Out" --> L["Formatar Mensagem de Erro"];
     L --> I;
 
-    I --> J("Frontend: Exibir Resposta na UI");
-    J --> K[/"Usuário (Vê a resposta)"/];
+    I --> C;
+    C -- "Resposta JSON" --> B;
+    B --> K[/"Usuário (Vê a resposta)"/];
 
 ```
 
@@ -131,108 +131,73 @@ flowchart TD;
 
 ### Pré-requisitos
 
-  - **Docker e Docker Compose** (Recomendado)
-  - *Ou (para desenvolvimento local)*:
-      - Python 3.9+ e [Poetry](https://python-poetry.org/)
-      - Node.js 16+ e `npm`
-      - Locale `pt_BR.UTF-8` instalado no sistema (para formatação de datas)
+  - **Conta Vercel** e **Vercel CLI** instalada (`npm install -g vercel`) e logada (`vercel login`).
+  - **Conta Upstash Redis** (ou outro Redis acessível publicamente).
+  - **Contas/APIs:** OpenAI, Pipefy, Cal.com configuradas.
+  - Python 3.10+ e [Poetry](https://python-poetry.org/) (para desenvolvimento backend local e gestão de dependências).
+  - Node.js 16+ e `npm` (para desenvolvimento frontend local).
+  - Git.
 
-### Configuração
+### Configuração e Deploy
 
-1.  **Clone o repositório:**
+1.  **Clone o Repositório.**
 
     ```bash
     git clone git@github.com:Oseiasdfarias/oseias_desafio_elite_dev_ia.git
     cd desafio_elite_dev_ia
     ```
 
-2.  **Variáveis de Ambiente (Crítico\!)**
-    Crie um arquivo `.env` na raiz do projeto.
+2.  **Variáveis de Ambiente (`.env` local):**
+    Crie um arquivo `.env` na raiz para **desenvolvimento local**.
 
     ```dotenv
-    # --- Configuração da OpenAI ---
-    OPENAI_API_KEY=sk-proj-XXXXXXXXXXXXXXXX
-    # OPENAI_ASSISTANT_ID=XXXXXXXXXXXXXXXXX (Será preenchido pelo script)
+    # --- OpenAI ---
+    OPENAI_API_KEY=sk-proj-xxxxxxxxxxxxxxxxxxxxxxxx
+    # OPENAI_ASSISTANT_ID=asst_xxxxxxxxxxxxxxxx (Preenchido pelo script)
 
-    # --- Configuração do Pipefy ---
-    PIPEFY_API_KEY=XXXXXXXXXXXXXXXXXXXXXXXX
+    # --- Pipefy ---
+    PIPEFY_API_KEY=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.xxxxxxxx
     PIPEFY_PIPE_ID=XXXXXXXXXXX
-    # Nome do campo de e-mail (como na UI do Pipefy)
     PIPEFY_EMAIL_FIELD_NAME="E-mail"
-    # IDs dos campos
-    PIPEFY_NAME_FIELD_ID="nome_do_lead"
-    PIPEFY_EMAIL_FIELD_ID="e_mail"
-    PIPEFY_COMPANY_FIELD_ID="empresa"
-    PIPEFY_NEED_FIELD_ID="necessidade_espec_fica"
-    PIPEFY_INTEREST_FIELD_ID="checklist_vertical"
-    PIPEFY_MEETING_LINK_FIELD_ID="link_da_reuni_o"
-    PIPEFY_MEETING_TIME_FIELD_ID="data_e_hora_da_reuni_o"
+    # ... (outros campos Pipefy) ...
 
-    # --- Configuração do Cal.com ---
-    CAL_COM_API_KEY=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-    CAL_COM_EVENT_TYPE_ID=XXXXXXX # ID numérico do seu Event Type
-    CAL_COM_EVENT_DURATION_MINUTES=30 # Duração em minutos do evento
-    CAL_COM_USERNAME=XXXXXXXXXXX # Seu username no Cal.com
-    # CAL_COM_USER_ID=XXXXXXXX # ID numérico do seu usuário (opcional, removido da lógica atual)
+    # --- Cal.com ---
+    CAL_COM_API_KEY=cal_live_xxxxxxxxxxxxxxxxxxxxxxxxxx
+    CAL_COM_EVENT_TYPE_ID=XXXXXXX
+    CAL_COM_EVENT_DURATION_MINUTES=30
+    CAL_COM_USERNAME=XXXXXXXXXXX
+
+    # --- Redis (Ex: Upstash) ---
+    UPSTASH_REDIS_URL="rediss://:SEU_TOKEN@SEU_ENDPOINT.upstash.io:PORTA"
     ```
 
-3.  **Criar/Atualizar o Assistente OpenAI:**
-    Execute este script **uma vez** (ou sempre que alterar as instruções/ferramentas).
+3.  **Criar/Atualizar o Assistente OpenAI (Localmente):**
+    Execute **uma vez** (ou após mudar instruções/ferramentas):
 
     ```bash
-    cd backend
-    poetry install # Instala dependências do backend se ainda não o fez
-    poetry run python create_assistant.py
+    cd backend # Pasta original com pyproject.toml
+    poetry install
+    poetry run python ../api/create_assistant.py # Executa o script na pasta api/
     cd ..
     ```
 
-    Isso criará/atualizará o assistente e adicionará/atualizará o `OPENAI_ASSISTANT_ID` no seu arquivo `.env`.
+    Isso atualiza o `.env` com o `OPENAI_ASSISTANT_ID`.
 
-4.  **Rodando com Docker (Recomendado):**
-    Na raiz do projeto:
-
-    ```bash
-    docker compose up --build
-    ```
-
-    O backend estará em `http://localhost:8000` (API docs em `/docs`) e o frontend em `http://localhost:3000`.
-
-## Arquitetura de Dockerização
-
-A configuração do Docker usa `docker-compose` para orquestrar os serviços de `backend` e `frontend`, simulando um ambiente de produção com um **proxy reverso** (Nginx).
-
-1.  **`docker-compose.yml`**: Define os serviços `backend` (FastAPI) e `frontend` (React+Nginx), passa as variáveis do `.env` e mapeia as portas (`8000` para backend, `3000` para frontend).
-2.  **`backend/Dockerfile`**: Constrói a imagem Python, instala dependências (via Poetry), configura o locale `pt_BR.UTF-8` e inicia o `uvicorn`.
-3.  **`frontend/Dockerfile`**: Build multi-estágio: instala dependências Node, compila o React (`npm run build`), depois copia os arquivos estáticos para uma imagem Nginx e aplica patches de segurança (`apk upgrade`).
-4.  **`frontend/nginx.conf`**: Configura o Nginx para servir os arquivos React (`location /`) e redirecionar chamadas `/api/` para o serviço `backend` na rede Docker (`location /api/`).
-
-### Fluxo de um Pedido de Chat (Dockerizado)
-
-1.  Usuário acessa `http://localhost:3000`.
-
-2.  Nginx (contêiner `frontend`) serve o app React.
-
-3.  Usuário envia mensagem.
-
-4.  React faz `fetch('/api/chat', ...)`.
-
-5.  Navegador envia para `http://localhost:3000/api/chat`.
-
-6.  Nginx intercepta, remove `/api/`, encaminha para `http://backend:8000/chat`.
-
-7.  Backend (FastAPI) processa, chama OpenAI/[Cal.com](https://cal.com)/[Pipefy](https://www.pipefy.com/pt-br/), retorna JSON.
-
-8.  Nginx repassa a resposta ao navegador.
-
-9.  React atualiza o chat.
-
-10. **Rodando Localmente (Alternativa):**
-    *Terminal 1: Backend*
+4.  **Gerar `requirements.txt` para Vercel:**
+    Certifique-se que `api/requirements.txt` reflete as dependências do `pyproject.toml`.
 
     ```bash
     cd backend
-    poetry install
-    poetry run uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    poetry export -f requirements.txt --output ../api/requirements.txt --without-hashes
+    cd ..
+    ```
+
+5.  **Rodando Localmente (Opcional):**
+    *Terminal 1: Backend*
+
+    ```bash
+    # A partir da raiz
+    python api/index.py
     ```
 
     *Terminal 2: Frontend*
@@ -243,83 +208,108 @@ A configuração do Docker usa `docker-compose` para orquestrar os serviços de 
     npm start
     ```
 
-    O frontend estará em `http://localhost:3000`. **Certifique-se que o `App.js` está usando `fetch('http://localhost:8000/chat', ...)` e que o CORS está habilitado no `backend/main.py` para este modo.**
+    Acesse `http://localhost:3000`. (Verifique URLs no `App.js` e CORS no `api/index.py` para este modo).
 
-## Endpoints da API (Backend)
+6.  **Deploy na Vercel (Recomendado):**
+    a.  **Configure o Projeto Vercel:** Crie um projeto na Vercel e conecte ao seu repositório Git.
+    b.  **Configure Variáveis de Ambiente e Segredos:** No painel Vercel (`Settings > Environment Variables`), adicione **TODAS** as variáveis do `.env` (`OPENAI_API_KEY`, `PIPEFY_API_KEY`, `UPSTASH_REDIS_URL`, etc.). **Vincule** cada variável (nome MAIÚSCULO) a um **Secret Vercel** (nome minúsculo, ex: `openai_api_key`) onde colará o valor real. Veja `vercel.json` para os nomes `@nome_do_segredo`.
+    c.  **Garanta o `vercel.json`:** Verifique se o `vercel.json` (fornecido anteriormente) está na raiz do projeto.
+    d.  **Faça o Push para o Git:** Envie todas as alterações para o branch de produção (ex: `main`).
+    e.  **Deploy:** A Vercel deve fazer o deploy automaticamente. Ou, rode `vercel --prod` na raiz.
 
-  - **GET /health**: Verificação de saúde.
-  - **POST /chat**: Envia mensagem e obtém resposta.
-  - **POST /session**: Cria nova sessão.
-  - **GET /sessions**: Lista sessões ativas (em memória).
-  - **GET /history/{session\_id}**: Obtém histórico.
-  - **DELETE /session/{session\_id}**: Deleta sessão e thread OpenAI.
+## Arquitetura Vercel (Serverless)
 
-## Como Usar
+O deploy na Vercel utiliza uma arquitetura serverless:
 
-1.  **Inicie os serviços** (Docker ou Localmente).
+1.  **`vercel.json`**: Configura o build e o roteamento.
+      * `builds`: Instrui a Vercel a construir o frontend React (output em `frontend/build`) e a preparar a API Python (`api/index.py`).
+      * `rewrites`: Define as regras de roteamento:
+          * Requisições `/api/(.*)` são enviadas para a função `api/index.py`.
+          * Outras requisições tentam primeiro servir arquivos estáticos de `frontend/build`.
+          * Se nenhum arquivo estático for encontrado, serve `frontend/build/index.html` (fallback para SPA).
+      * `env`: Mapeia as Variáveis de Ambiente configuradas no painel Vercel (vinculadas aos Secrets) para a aplicação.
+2.  **Frontend**: Servido como arquivos estáticos pela CDN da Vercel.
+3.  **Backend**: Executado como Funções Serverless Python (`api/index.py`), acionadas sob demanda pelas requisições `/api/...`.
+4.  **Estado da Sessão**: Gerenciado externamente pelo **Redis (Upstash)**, acessado pelo backend a cada requisição via `redis-py`.
 
-2.  **Abra o webchat** (`http://localhost:3000`).
+## Endpoints da API (Definidos no Backend, Acessados via `/api` na Vercel)
 
-3.  **Interaja com o agente.** Siga o fluxo natural da conversa. O agente irá:
+  - **GET /** (`/api/`): Raiz da API.
+  - **POST /chat** (`/api/chat`): Envia mensagem e obtém resposta.
+  - **POST /session** (`/api/session`): Gera novo `session_id`.
+  - **GET /history/{session\_id}** (`/api/history/...`): Obtém histórico.
+  - **DELETE /session/{session\_id}** (`/api/session/...`): Deleta sessão (Redis) e thread OpenAI.
+  - **POST /session/{session\_id}/reset** (`/api/session/.../reset`): Reseta a sessão.
+  - **GET /health** (`/api/health`): Verificação de saúde (inclui Redis).
 
-      * Apresentar-se.
-      * Coletar Nome, Email, Empresa e Necessidade.
-      * Confirmar o interesse em agendar uma reunião.
-      * Buscar e apresentar horários disponíveis (já convertidos para o fuso horário de São Paulo).
-      * Aguardar sua escolha de horário.
-      * Confirmar o agendamento, fornecendo o link da reunião (Google Meet ou link de confirmação do Cal.com).
-      * Salvar/atualizar o lead no Pipefy com todos os dados coletados, incluindo os detalhes da reunião.
+## Como Usar (Aplicação em Produção - Vercel)
 
-    **Cenário Típico de Agendamento:**
+1.  **Acesse a URL** fornecida pela Vercel (ex: `https://seu-projeto.vercel.app`).
+2.  **Interaja com o agente.** Siga o fluxo natural:
+      * Coleta de dados -\> Registro no Pipefy.
+      * Confirmação de interesse -\> Busca de horários no Cal.com.
+      * Apresentação dos horários (em Horário de São Paulo).
+      * Escolha do horário -\> Agendamento no Cal.com.
+      * Confirmação com link (Meet/Zoom ou Cal.com) e hora (São Paulo).
+      * Atualização no Pipefy com link e hora (UTC).
+3.  **Verifique Cal.com e Pipefy:** Confirme a reunião no [Cal.com/seu](https://www.google.com/search?q=https://Cal.com/seu) calendário e a atualização do card no Pipefy.
 
-      * **Você:** `Olá`
-      * **Agente:** (Apresentação)
-      * **Você:** `Gostaria de informações.`
-      * **Agente:** (Pergunta o Nome)
-      * **Você:** `Meu nome é Maria.`
-      * **Agente:** (Pergunta o Email)
-      * **Você:** `maria@exemplo.com`
-      * **Agente:** (Pergunta a Empresa)
-      * **Você:** `Exemplo Corp.`
-      * **Agente:** (Pergunta a Necessidade)
-      * **Você:** `Preciso melhorar minhas vendas.`
-      * **Agente:** (Confirma interesse em agendar)
-      * **Você:** `Sim`
-      * **Agente:** (Apresenta a lista de horários formatados, ex: "1. 29 de Outubro às 10:00...")
-      * **Você:** `Pode ser 29 de Outubro às 10:00`
-      * **Agente:** (Confirma o agendamento com link e hora formatada)
 
-    **Cenário de Recusa:**
+## 🚀 Demonstração (Deploy Vercel)
 
-      * ... (Após coletar os dados) ...
-      * **Agente:** `Gostaria de agendar...?`
-      * **Você:** `Não, obrigado.`
-      * **Agente:** (Agradece e encerra. O lead já foi salvo no Pipefy).
+A aplicação foi implantada na Vercel e está acessível publicamente através do link abaixo:
 
-4.  **Verifique Cal.com e Pipefy:** Após um agendamento bem-sucedido, verifique se a reunião aparece no seu calendário Cal.com (e no Google Calendar vinculado) no horário correto (convertido para seu fuso). Verifique também se o card correspondente no Pipefy foi criado ou atualizado com o link e a data/hora (em UTC) da reunião.
+### **Link do Deploy:** *[https://desafio-elite-dev-ia.vercel.app](https://desafio-elite-dev-ia.vercel.app)*
+
+Abaixo estão algumas capturas de tela demonstrando o funcionamento e monitoramento:
+
+**1. Production Deployment (Aplicação Online):**
+* *Visão geral da aplicação rodando na URL de produção da Vercel.*
+    <p align="center">
+      <img src="util/deploy_versel.png" alt="Deploy de Produção na Vercel" width="80%">
+    </p>
+
+**2. Gráficos de Observabilidade (Vercel):**
+* *Painel da Vercel mostrando gráficos de uso, performance ou analytics da aplicação.*
+    <p align="center">
+      <img src="util/observability_vercel.png" alt="Gráficos de Observabilidade Vercel" width="80%">
+    </p>
+
+**3. Logs da Função Serverless (Vercel):**
+* *Logs da função `api/index.py` no painel da Vercel, exibindo o processamento de requisições.*
+    <p align="center">
+      <img src="util/log_vercel.png" alt="Logs da Função na Vercel" width="80%">
+    </p>
+
+
+**4. Frontend com Diálogos:**
+* *Interface do chat em funcionamento, mostrando a interação entre usuário e agente.*
+    <p align="center">
+      <img src="util/frontend.png" alt="Interface do Chat com Diálogos" width="60%">
+    </p>
 
 ## Funcionalidades Principais
 
   - **Coleta Automática de Informações**: Nome, email, empresa, necessidades.
   - **Integração com Pipefy**: Criação/atualização de cards via API GraphQL.
-  - **Agendamento de Reuniões**: Integração com **Cal.com API v1** para buscar horários e agendar, obtendo link real de videoconferência.
-  - **Manutenção de Contexto**: Utiliza Threads da OpenAI.
-  - **Interface Web Amigável**: Chat React com auto-scroll, formatação de horários em lista e renderização de links clicáveis.
-  - **Tratamento de Fuso Horário**: Lógica centralizada no backend Python para apresentar horários em `America/Sao_Paulo` ao usuário, enquanto usa UTC para APIs.
+  - **Agendamento de Reuniões**: Integração com **Cal.com API v1**.
+  - **Manutenção de Contexto**: Utiliza Threads da OpenAI com **persistência de sessão via Redis (Upstash)**.
+  - **Interface Web Amigável**: Chat React com auto-scroll, formatação de horários e links.
+  - **Tratamento de Fuso Horário**: Lógica no backend Python para apresentar horários em `America/Sao_Paulo`.
+  - **Deploy Serverless**: Otimizado para **Vercel**.
 
 ## Tecnologias Utilizadas
 
-  - **Backend**: FastAPI, Python, OpenAI Assistant API, Poetry, python-dateutil, httpx
+  - **Backend**: FastAPI (Serverless), Python, OpenAI Assistant API, Poetry (dev), Redis (Upstash), python-dateutil, httpx
   - **Frontend**: React (Hooks), Fetch API, CSS
   - **Integrações**: Pipefy API (GraphQL), **Cal.com API v1**
-  - **Infraestrutura**: Docker, Docker Compose, Nginx
+  - **Infraestrutura**: **Vercel**, **Upstash Redis** (ou outro Redis externo)
 
 ## Próximos Passos
 
-  - [ ] Implementar armazenamento persistente para sessões (ex: Redis/Vercel KV) em vez de memória (necessário para deploy serverless).
   - [ ] Adicionar testes unitários/integração.
   - [ ] Implementar autenticação de usuários (se necessário).
   - [ ] Adicionar mais integrações de calendário (Outlook, etc.).
   - [ ] Implementar relatórios analíticos de conversão.
-  - [ ] Adicionar suporte a múltiplos idiomas (exigiria mais locales no Docker e instruções ao assistente).
+  - [ ] Adicionar suporte a múltiplos idiomas.
   - [ ] Implementar sistema de follow-up automático por e-mail.
