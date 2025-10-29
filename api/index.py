@@ -10,8 +10,8 @@ import redis.asyncio as redis # <-- Importa Redis Assíncrono
 
 load_dotenv() # Carrega .env
 
-from models import ChatRequest, ChatResponse
-from services import OpenAIService
+from .models import ChatRequest, ChatResponse
+from .services import OpenAIService
 
 # Configuração de logging
 logging.basicConfig(level=logging.INFO)

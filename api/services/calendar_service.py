@@ -10,8 +10,6 @@ from dateutil.parser import parse as parse_datetime
 from dateutil import tz
 import locale
 
-# Importação do módulo 'models'
-from models import Lead, Meeting, AvailableSlot
 
 # --- FUNÇÃO HELPER ATUALIZADA ---
 def format_datetime_sao_paulo(dt_utc_iso: str) -> str:

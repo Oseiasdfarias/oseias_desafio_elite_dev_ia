@@ -12,7 +12,7 @@ from .pipefy_service import PipefyService
 from .calendar_service import CalendarService, format_datetime_sao_paulo # Importa a função helper
 
 # Importação do pacote pai
-from models import Lead
+from ..models import Lead
 
 # --- NOVO: Armazenamento temporário para mapear slots ---
 # Em produção, isso deveria ser um cache (Redis) ou banco de dados
