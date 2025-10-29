@@ -89,7 +89,7 @@ async def root():
     # Ajuste a mensagem se necessário (ex: API Endpoint)
     return {"message": "SDR Agent Backend API is running!"}
 
-@app.post("/chat", response_model=ChatResponse)
+@app.post("/api/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
     try:
         session_id = request.session_id
