@@ -17,6 +17,9 @@
 
 # Desafio Elite Dev IA - SDR Agent
 
+[demo_projetec1.webm](https://github.com/user-attachments/assets/abf15d7a-89ba-4ab4-9c88-c3d1a7b727c5)
+
+
 Este projeto implementa um agente SDR (Sales Development Representative) automatizado utilizando a API Assistant da OpenAI, FastAPI (como função serverless na Vercel) para o backend, Redis (Upstash) para gerenciamento de sessão, e um webchat baseado em React para o frontend. O agente foi projetado para engajar leads, coletar informações, agendar reuniões (via Cal.com) e gerenciar dados de leads no Pipefy.
 
 ## Estrutura Detalhada do Projeto (Pós-Refatoração para Vercel)
