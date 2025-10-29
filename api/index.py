@@ -1,117 +1,97 @@
-from fastapi import FastAPI, HTTPException
-# Remova CORSMiddleware se estiver fazendo deploy na Vercel ou usando Nginx proxy
-from fastapi.middleware.cors import CORSMiddleware
-from typing import Dict # Remova List se não usada
+# api/index.py
+
+from fastapi import FastAPI, HTTPException, Depends # <-- Adiciona Depends
+from typing import Dict, Annotated # <-- Adiciona Annotated
 from dotenv import load_dotenv
 import uuid
 import logging
-import os # Necessário para getenv
-import redis.asyncio as redis # <-- Importa Redis Assíncrono
+import os
+import redis.asyncio as redis
+import asyncio # <-- Adiciona asyncio para o health check
 
-load_dotenv() # Carrega .env
+load_dotenv()
 
-from .models import ChatRequest, ChatResponse
-from .services import OpenAIService
+# Usa importações absolutas relativas a 'api/'
+try:
+    from api.models import ChatRequest, ChatResponse
+    from api.services import OpenAIService
+except ImportError:
+    # Fallback para dev local (rodando de dentro da pasta backend/)
+    from models import ChatRequest, ChatResponse
+    from services import OpenAIService
 
-# Configuração de logging
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
 # --- Configuração do Cliente Redis ---
-redis_url = os.getenv("UPSTASH_REDIS_URL") # Pega a URL completa do Upstash
-# Alternativa se você definiu host/port/password separadamente:
-# redis_host = os.getenv("REDIS_HOST", "localhost")
-# redis_port = int(os.getenv("REDIS_PORT", 6379))
-# redis_password = os.getenv("REDIS_PASSWORD", None)
-
+# Mantém a URL global para fácil acesso
+redis_url = os.getenv("UPSTASH_REDIS_URL")
 if not redis_url:
-    # Se a URL completa não estiver definida, tenta montar com partes separadas
     redis_host = os.getenv("REDIS_HOST")
     redis_port = os.getenv("REDIS_PORT")
     redis_password = os.getenv("REDIS_PASSWORD")
     if redis_host and redis_port:
         redis_url = f"rediss://{':' + redis_password + '@' if redis_password else ''}{redis_host}:{redis_port}"
     else:
-        raise ValueError("Variáveis de ambiente Redis não configuradas (UPSTASH_REDIS_URL ou REDIS_HOST/PORT/PASSWORD)")
+        raise ValueError("Variáveis de ambiente Redis não configuradas")
 
-try:
-    # Cria o cliente Redis assíncrono
-    redis_client = redis.from_url(redis_url, decode_responses=True)
-    logger.info(f"Conectado ao Redis em {redis_url.split('@')[-1]}") # Log sem a senha
-except Exception as e:
-    logger.error(f"Falha ao conectar ao Redis: {e}")
-    # Decide se quer parar a aplicação ou tentar continuar (pode falhar depois)
-    raise RuntimeError(f"Não foi possível conectar ao Redis: {e}")
+# --- NOVA FUNÇÃO DEPENDÊNCIA para obter o cliente Redis ---
+async def get_redis_client():
+    try:
+        # Cria um novo cliente (ou obtém de um pool gerenciado pela biblioteca)
+        # para cada requisição que precisar dele.
+        # A biblioteca redis.asyncio gerencia o pool de conexões por baixo dos panos.
+        client = redis.from_url(redis_url, decode_responses=True)
+        # Verifica a conexão rapidamente (opcional, mas bom para debug inicial)
+        # await asyncio.wait_for(client.ping(), timeout=1.0)
+        yield client # Disponibiliza o cliente para a rota
+    except redis.RedisError as e:
+        logger.error(f"Falha ao obter conexão Redis: {e}")
+        raise HTTPException(status_code=503, detail=f"Serviço Redis indisponível: {e}")
+    except asyncio.TimeoutError:
+        logger.error("Timeout ao conectar/pingar Redis.")
+        raise HTTPException(status_code=504, detail="Timeout ao conectar ao serviço Redis.")
+    except Exception as e:
+        logger.error(f"Erro inesperado ao obter cliente Redis: {e}")
+        raise HTTPException(status_code=500, detail=f"Erro interno ao conectar ao Redis: {e}")
+    # A conexão do pool é geralmente liberada automaticamente aqui,
+    # mas um 'finally' com 'await client.close()' poderia ser adicionado se necessário.
+    # No entanto, com from_url, a gestão do pool deve ser suficiente.
 
-# (Opcional) Eventos de startup/shutdown para testar/fechar conexão
-# @app.on_event("startup")
-# async def startup_event():
-#     try:
-#         await redis_client.ping()
-#         logger.info("Ping no Redis bem-sucedido.")
-#     except Exception as e:
-#         logger.error(f"Ping no Redis falhou: {e}")
+# Define um tipo anotado para facilitar a injeção
+RedisClientDep = Annotated[redis.Redis, Depends(get_redis_client)]
+# --------------------------------------------------------
 
-# @app.on_event("shutdown")
-# async def shutdown_event():
-#     await redis_client.close()
-#     logger.info("Conexão Redis fechada.")
-
-
-# --- CORS (Mantenha se rodando localmente sem Nginx/Docker, remova para Vercel) ---
-origins = [
-    "http://localhost",
-    "http://localhost:3000",
-    "http://localhost:3001", # Adicionei 3001
-    "http://127.0.0.1:3000",
-    "http://127.0.0.1:3001", # Adicionei 3001
-]
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-# ---------------------------------------------------------------------------------
-
-
-# Initialize services
+# Serviços
 openai_service = OpenAIService()
 
-# REMOVA o dicionário 'sessions' em memória
-# sessions: Dict[str, str] = {}
 
 @app.get("/")
 async def root():
-    # Ajuste a mensagem se necessário (ex: API Endpoint)
     return {"message": "SDR Agent Backend API is running!"}
 
+# --- AJUSTE: Injeta o cliente Redis usando Depends ---
 @app.post("/api/chat", response_model=ChatResponse)
-async def chat(request: ChatRequest):
+async def chat(request: ChatRequest, redis_client: RedisClientDep):
     try:
         session_id = request.session_id
         user_message = request.message
-        
         logger.info(f"Processando chat para session_id: {session_id}")
-        
-        # --- Lógica do Redis ---
-        thread_id = await redis_client.get(session_id) # Busca no Redis
 
+        # Usa o cliente injetado
+        thread_id = await redis_client.get(session_id)
         if not thread_id:
-            logger.info(f"Thread ID não encontrado para {session_id} no Redis, criando novo.")
+            logger.info(f"Thread ID não encontrado para {session_id}, criando novo.")
             thread_id = openai_service.create_thread()
-            # Salva no Redis com um tempo de expiração (ex: 1 dia = 86400 segundos)
             await redis_client.set(session_id, thread_id, ex=86400)
-            logger.info(f"Novo thread_id {thread_id} salvo no Redis para {session_id} (expira em 1 dia)")
+            logger.info(f"Novo thread_id {thread_id} salvo para {session_id}")
         else:
-            logger.info(f"Thread ID {thread_id} encontrado no Redis para {session_id}")
-        # --------------------
+            logger.info(f"Thread ID {thread_id} encontrado para {session_id}")
 
         ai_response_content = await openai_service.get_assistant_response(thread_id, user_message)
-
         return ChatResponse(
             response=ai_response_content,
             session_id=session_id,
@@ -120,112 +100,91 @@ async def chat(request: ChatRequest):
     except Exception as e:
         logger.error(f"Error processing chat for session {session_id}: {e}", exc_info=True)
         detail = str(e)
-        # Tenta extrair detalhes de erros Redis ou HTTP
         if hasattr(e, 'response') and hasattr(e.response, 'text'): detail = f"{str(e)} - Response: {e.response.text}"
-        elif isinstance(e, redis.RedisError): detail = f"Redis Error: {str(e)}"
+        elif isinstance(e, redis.RedisError): detail = f"Redis Error: {str(e)}" # Captura erros específicos do Redis
         raise HTTPException(status_code=500, detail=f"Error processing chat: {detail}")
 
-@app.get("/history/{session_id}")
-async def get_history(session_id: str):
-    # Substitui a busca no dicionário pela busca no Redis
+# --- AJUSTE: Injeta o cliente Redis ---
+@app.get("/api/history/{session_id}")
+async def get_history(session_id: str, redis_client: RedisClientDep): # <-- Injeta aqui
     thread_id = await redis_client.get(session_id)
     if not thread_id:
-        raise HTTPException(status_code=404, detail="Session not found in Redis")
-    
-    # O resto da lógica permanece igual
+        raise HTTPException(status_code=404, detail="Session not found")
     try:
+        # ... (lógica para buscar mensagens da OpenAI - sem alterações) ...
         messages = openai_service.client.beta.threads.messages.list(thread_id=thread_id)
         formatted_messages = []
         for msg in reversed(messages.data):
-            # Pequena melhoria: checa se content[0] existe antes de acessar text
             if msg.content and len(msg.content) > 0 and hasattr(msg.content[0], 'text'):
                 formatted_messages.append({
                     "role": msg.role,
                     "content": msg.content[0].text.value,
-                    "timestamp": msg.created_at # Mantém timestamp original
+                    "timestamp": msg.created_at
                 })
         return formatted_messages
     except Exception as e:
         logger.error(f"Error retrieving history for session {session_id}, thread {thread_id}: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error retrieving history: {str(e)}")
 
-@app.post("/session")
+@app.post("/api/session")
 async def create_session():
-    """Gera um novo session_id. O thread será criado no primeiro /chat."""
+    # Esta rota não precisa do Redis
     session_id = str(uuid.uuid4())
     logger.info(f"Gerado novo session_id: {session_id}")
-    # Não interage com Redis ou OpenAI aqui
-    return {
-        "session_id": session_id,
-        "message": "New session ID generated. Thread will be created on first message."
-    }
+    return { "session_id": session_id, "message": "New session ID generated." }
 
+# --- AJUSTE: Injeta o cliente Redis ---
 @app.delete("/session/{session_id}")
-async def delete_session(session_id: str):
-    """Deleta a sessão do Redis e o thread da OpenAI"""
-    thread_id = await redis_client.get(session_id) # Busca primeiro para pegar o thread_id
+async def delete_session(session_id: str, redis_client: RedisClientDep): # <-- Injeta aqui
+    thread_id = await redis_client.get(session_id)
     if thread_id:
         try:
-            deleted_count = await redis_client.delete(session_id) # Deleta do Redis
-            if deleted_count > 0:
-                logger.info(f"Session {session_id} deleted from Redis.")
-            else:
-                logger.warning(f"Session {session_id} found initially but failed to delete from Redis.")
-
-            # Tenta deletar da OpenAI mesmo se a deleção do Redis falhar
+            deleted_count = await redis_client.delete(session_id)
+            if deleted_count > 0: logger.info(f"Session {session_id} deleted from Redis.")
+            else: logger.warning(f"Session {session_id} failed to delete from Redis.")
             openai_service.cleanup_thread(thread_id)
         except Exception as e:
             logger.error(f"Error cleaning up session {session_id}, thread {thread_id}: {e}", exc_info=True)
-            # Retorna um erro 500 se a limpeza falhar
             raise HTTPException(status_code=500, detail=f"Error cleaning up session: {str(e)}")
         return {"message": "Session deleted successfully"}
     else:
         logger.warning(f"Attempted to delete non-existent session: {session_id}")
         raise HTTPException(status_code=404, detail="Session not found")
 
-@app.post("/session/{session_id}/reset")
-async def reset_session(session_id: str):
-    """Reseta uma sessão deletando o thread antigo e a chave Redis."""
-    # Reutiliza a lógica de deleção, que já trata o caso de não encontrar
+# --- AJUSTE: Injeta o cliente Redis ---
+@app.post("/api/session/{session_id}/reset")
+async def reset_session(session_id: str, redis_client: RedisClientDep): # <-- Injeta aqui para passar para delete_session
     try:
-        delete_response = await delete_session(session_id)
-        # Se delete_session não levantou exceção 404, significa que existia e foi deletada (ou tentou ser)
-        return {
-            "message": "Sessão resetada com sucesso. O próximo chat criará um novo thread.",
-            "session_id": session_id
-        }
-    except HTTPException as http_exc:
-        # Se a sessão não foi encontrada (404), o reset não faz sentido prático, mas podemos informar
-        if http_exc.status_code == 404:
-            return {
-                "message": "Sessão não encontrada para resetar. O próximo chat criará um novo thread.",
-                "session_id": session_id
-            }
+        # Passa o cliente injetado para a função delete_session (requer ajuste em delete_session)
+        # Ou mais simples: refaz a lógica aqui
+        thread_id = await redis_client.get(session_id)
+        if thread_id:
+            await redis_client.delete(session_id)
+            openai_service.cleanup_thread(thread_id)
+            logger.info(f"Session {session_id} reset (deleted).")
+            return { "message": "Sessão resetada.", "session_id": session_id }
         else:
-            raise http_exc # Re-levanta outros erros HTTP
+            logger.info(f"Session {session_id} not found for reset.")
+            return { "message": "Sessão não encontrada para resetar.", "session_id": session_id }
+
+    except Exception as e:
+        logger.error(f"Error resetting session {session_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error resetting session: {str(e)}")
 
 
-# Removido /sessions pois listar todas as chaves do Redis pode ser custoso/inseguro
-# @app.get("/sessions") ...
-
-# Health check endpoint ajustado
-@app.get("/health")
-async def health_check():
+# --- AJUSTE: Injeta o cliente Redis ---
+@app.get("/api/health")
+async def health_check(redis_client: RedisClientDep): # <-- Injeta aqui
     redis_status = "disconnected"
     try:
-        # Tenta um comando rápido no Redis para verificar a conexão
-        await redis_client.ping()
+        # Usa o cliente injetado para o ping
+        await asyncio.wait_for(redis_client.ping(), timeout=2.0)
         redis_status = "connected"
+    except asyncio.TimeoutError:
+        logger.warning("Health check: Redis ping timed out.")
     except Exception as e:
         logger.warning(f"Health check: Redis ping failed: {e}")
-
-    # Não temos mais a contagem de sessões em memória
     return {
         "status": "healthy" if redis_status == "connected" else "degraded",
-        "services": {
-            "openai": "configured",
-            "pipefy": "configured",
-            "calendar": "configured",
-            "redis": redis_status # Adiciona status do Redis
-        }
+        "services": { "redis": redis_status }
     }
