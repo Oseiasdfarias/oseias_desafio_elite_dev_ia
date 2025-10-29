@@ -223,6 +223,12 @@ flowchart TD;
     d.  **Faça o Push para o Git:** Envie todas as alterações para o branch de produção (ex: `main`).
     e.  **Deploy:** A Vercel deve fazer o deploy automaticamente. Ou, rode `vercel --prod` na raiz.
 
+    > ⚠️ Observação: para fazer o deploy na Vercel mude para a Branch  `deploy-vercel `
+
+    ```bash
+    ❯ git checkout deploy-vercel
+    ```
+
 ## Arquitetura Vercel (Serverless)
 
 O deploy na Vercel utiliza uma arquitetura serverless:
