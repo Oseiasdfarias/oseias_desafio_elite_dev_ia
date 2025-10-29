@@ -11,7 +11,7 @@
 /backend/__pycache__/
 *.pyc
 .pytest_cache/
-
+vercel.json
 
 # === Dependências e Arquivos Gerados (Node.js - Frontend) ===
 /frontend/node_modules/
@@ -41,3 +41,4 @@ ehthumbs.db
 *.njsproj
 *.sln
 *.sw? # Arquivos swap do Vim
+.vercel
