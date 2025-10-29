@@ -5,7 +5,6 @@ from datetime import datetime
 from typing import List, Dict, Any
 import json
 
-
 from ..models import Lead
 
 class PipefyService:
