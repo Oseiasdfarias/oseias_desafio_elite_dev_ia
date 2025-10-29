@@ -143,8 +143,8 @@ flowchart TD;
 1.  **Clone o Repositório.**
 
     ```bash
-    git clone git@github.com:Oseiasdfarias/oseias_desafio_elite_dev_ia.git
-    cd desafio_elite_dev_ia
+    ❯ git clone git@github.com:Oseiasdfarias/oseias_desafio_elite_dev_ia.git
+    ❯ cd desafio_elite_dev_ia
     ```
 
 2.  **Variáveis de Ambiente (`.env` local):**
@@ -175,29 +175,33 @@ flowchart TD;
     Execute **uma vez** (ou após mudar instruções/ferramentas):
 
     ```bash
-    cd backend # Pasta original com pyproject.toml
-    poetry install
-    poetry run python ../api/create_assistant.py # Executa o script na pasta api/
-    cd ..
+    cd api # Pasta original com pyproject.toml
+    ❯ poetry install --no-root
+    ❯ poetry run python ../api/create_assistant.py # Executa o script na pasta api/
+    ❯ cd ..
     ```
 
-    Isso atualiza o `.env` com o `OPENAI_ASSISTANT_ID`.
+      > ⚠️ Observação: um novo arquivo `.env` será gerado dentro da pasta `api`, copie a chave dentro desse arquivo para o `.env` na raiz do projeto, pois isso, delete o `.env` dentro de `api`.
+
 
 4.  **Gerar `requirements.txt` para Vercel:**
     Certifique-se que `api/requirements.txt` reflete as dependências do `pyproject.toml`.
 
     ```bash
-    cd backend
-    poetry export -f requirements.txt --output ../api/requirements.txt --without-hashes
-    cd ..
+    cd api
+    ❯ poetry run pip freeze > requirements.txt
+    ❯ source $(poetry env info --path)/bin/activate
+    ❯ cd ..
     ```
 
 5.  **Rodando Localmente (Opcional):**
     *Terminal 1: Backend*
 
+    Após ter ativado a venv na pasta `api`, retorne para a raiz do projeto e execute o comando abaixo.
+
     ```bash
     # A partir da raiz
-    python api/index.py
+    ❯ uvicorn api.index:app --host 0.0.0.0 --port 8000
     ```
 
     *Terminal 2: Frontend*
@@ -209,6 +213,8 @@ flowchart TD;
     ```
 
     Acesse `http://localhost:3000`. (Verifique URLs no `App.js` e CORS no `api/index.py` para este modo).
+
+      > ⚠️ Observação:Para rodar localmente diretamente em sua máquina, você deve atualizar a rota no `App.js` para `fetch('http://localhost:8000/api/chat'` .
 
 6.  **Deploy na Vercel (Recomendado):**
     a.  **Configure o Projeto Vercel:** Crie um projeto na Vercel e conecte ao seu repositório Git.

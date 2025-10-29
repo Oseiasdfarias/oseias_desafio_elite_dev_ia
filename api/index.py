@@ -1,6 +1,7 @@
 # api/index.py
 
 from fastapi import FastAPI, HTTPException, Depends # <-- Adiciona Depends
+from fastapi.middleware.cors import CORSMiddleware # Mantido para Docker local
 from typing import Dict, Annotated # <-- Adiciona Annotated
 from dotenv import load_dotenv
 import uuid
@@ -64,6 +65,20 @@ async def get_redis_client():
 # Define um tipo anotado para facilitar a injeção
 RedisClientDep = Annotated[redis.Redis, Depends(get_redis_client)]
 # --------------------------------------------------------
+
+# --- CORS (Mantido para Docker local) ---
+origins = [
+    "http://localhost",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Serviços
 openai_service = OpenAIService()

@@ -1,0 +1,35 @@
+# Usa uma imagem Python base
+FROM python:3.10-slim
+
+# Instala e configura o locale pt_BR
+RUN apt-get update && apt-get install -y locales \
+    && sed -i -e 's/# pt_BR.UTF-8 UTF-8/pt_BR.UTF-8 UTF-8/' /etc/locale.gen \
+    && dpkg-reconfigure --frontend=noninteractive locales \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+ENV LANG pt_BR.UTF-8
+ENV LANGUAGE pt_BR:pt
+ENV LC_ALL pt_BR.UTF-8
+
+# Define o diretório de trabalho principal
+WORKDIR /app
+
+# Copia APENAS o arquivo de dependências da pasta api/ local para a raiz /app do container
+COPY api/requirements.txt .
+
+# Instala as dependências a partir da raiz /app
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copia TODO o conteúdo da pasta api/ local para DENTRO de uma pasta api/ no container
+# Resultando em /app/api/index.py, /app/api/models.py, /app/api/services/ etc.
+COPY ./api/ ./api/
+
+# --- NÃO definimos PYTHONPATH ---
+
+# Expõe a porta
+EXPOSE 8000
+
+# --- AJUSTE NO COMANDO ---
+# Executa Uvicorn a partir de /app (WORKDIR), mas aponta para o módulo 'api.index'
+# Isso faz o Python tratar 'api' como o pacote principal.
+CMD ["uvicorn", "api.index:app", "--host", "0.0.0.0", "--port", "8000"]
+# -------------------------

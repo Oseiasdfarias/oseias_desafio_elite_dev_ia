@@ -1,0 +1,37 @@
+# --- Estágio 1: Build (Construção) ---
+FROM node:18-alpine AS build
+
+# Define o diretório de trabalho DENTRO do frontend
+WORKDIR /app/frontend
+
+# Copia package.json e lock do frontend
+COPY frontend/package.json frontend/package-lock.json ./
+
+# Instala dependências DENTRO do contexto /app/frontend
+RUN npm install
+
+# Copia o código fonte do frontend para /app/frontend
+COPY ./frontend/ .
+
+# Executa o build DENTRO de /app/frontend
+RUN npm run build
+
+# --- Estágio 2: Serve (Servidor) ---
+FROM nginx:stable-alpine
+
+# Atualiza pacotes para segurança
+RUN apk update && apk upgrade
+
+# Copia os arquivos estáticos construídos do estágio 1
+# O build ocorreu em /app/frontend/build
+COPY --from=build /app/frontend/build /usr/share/nginx/html
+
+# Copia a configuração do Nginx (que estará na raiz)
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Expõe a porta 80
+EXPOSE 80
+
+# Comando para iniciar o Nginx
+CMD ["nginx", "-g", "daemon off;"]
+
