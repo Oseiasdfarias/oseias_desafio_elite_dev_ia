@@ -172,7 +172,7 @@ function App() {
       setInput('');
 
       try {
-          const response = await fetch('http://localhost:8000/chat', { // URL para dev local
+          const response = await fetch('/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ session_id: sessionId, message: userMessageContent }),
