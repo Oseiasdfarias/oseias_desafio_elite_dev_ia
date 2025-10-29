@@ -42,3 +42,4 @@ ehthumbs.db
 *.sln
 *.sw? # Arquivos swap do Vim
 .vercel
+.env*.local
