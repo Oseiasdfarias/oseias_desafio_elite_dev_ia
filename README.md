@@ -58,7 +58,7 @@ Time zones are handled in the backend: the agent shows times in `America/Sao_Pau
 You need Python 3.10+, [Poetry](https://python-poetry.org/), Node.js 16+, a Redis instance and API keys for OpenAI, Pipefy and Cal.com (see `.env` in [the Portuguese README](README.pt-BR.md#configuração-e-deploy)).
 
 ```bash
-# 1. create the OpenAI Assistant once (writes its id to .env)
+# 1. create the OpenAI Assistant once; it writes the id to api/.env, copy it to the root .env
 cd api && poetry install --no-root && poetry run python create_assistant.py && cd ..
 
 # 2. backend
